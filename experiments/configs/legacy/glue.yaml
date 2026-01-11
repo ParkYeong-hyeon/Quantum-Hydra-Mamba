@@ -1,0 +1,115 @@
+# GLUE Benchmark Experiments Configuration
+# Based on job_scripts/glue/
+
+# Extends base configuration
+_extends: ../base.yaml
+
+# SLURM Configuration (overrides base)
+slurm:
+  account: "m4138_g"
+  constraint: "gpu&hbm80g"
+  qos: "shared"
+  nodes: 1
+  gpus: 1
+  cpus_per_task: 32
+  time: "8:00:00"  # Shorter time for GLUE tasks
+  mail_type: "BEGIN,END,FAIL"
+  mail_user: "junghoon@lbl.gov"
+
+# GLUE Tasks
+tasks:
+  cola:
+    name: "CoLA"
+    description: "Corpus of Linguistic Acceptability"
+    metric: "Matthews Correlation Coefficient"
+    num_labels: 2
+  
+  sst2:
+    name: "SST-2"
+    description: "Stanford Sentiment Treebank"
+    metric: "Accuracy"
+    num_labels: 2
+  
+  mrpc:
+    name: "MRPC"
+    description: "Microsoft Research Paraphrase Corpus"
+    metric: "F1"
+    num_labels: 2
+  
+  stsb:
+    name: "STS-B"
+    description: "Semantic Textual Similarity Benchmark"
+    metric: "Pearson Correlation"
+    num_labels: 1  # Regression
+  
+  qqp:
+    name: "QQP"
+    description: "Quora Question Pairs"
+    metric: "F1"
+    num_labels: 2
+  
+  mnli:
+    name: "MNLI"
+    description: "Multi-Genre Natural Language Inference"
+    metric: "Accuracy"
+    num_labels: 3
+  
+  qnli:
+    name: "QNLI"
+    description: "Question Natural Language Inference"
+    metric: "Accuracy"
+    num_labels: 2
+  
+  rte:
+    name: "RTE"
+    description: "Recognizing Textual Entailment"
+    metric: "Accuracy"
+    num_labels: 2
+  
+  wnli:
+    name: "WNLI"
+    description: "Winograd NLI"
+    metric: "Accuracy"
+    num_labels: 2
+
+# Model Configuration
+models:
+  all:
+    name: "All Models"
+    description: "Run all available models"
+
+# Training Hyperparameters (overrides base)
+training:
+  n_qubits: 6
+  qlcu_layers: 2
+  embedding_dim: 128
+  hidden_dim: 64
+  chunk_size: 16
+  max_length: 64
+  n_epochs: 50
+  batch_size: 32
+  learning_rate: 0.0002  # 2e-4
+  patience: 10
+
+# Seeds
+seeds: [2024]
+
+# Experiment Configuration
+experiments:
+  # Run all tasks with all models
+  all_tasks:
+    tasks: [cola, sst2, mrpc, stsb, qqp, mnli, qnli, rte, wnli]
+    models: [all]
+    seeds: [2024]
+
+# Output Configuration
+output:
+  base_dir: "./results/glue"
+  logs_dir: "./glue/logs"
+  job_dir: "./job_scripts/glue"
+
+# Script Configuration
+script:
+  path: "glue/run_glue.py"
+  args:
+    output_dir: "../results/glue"

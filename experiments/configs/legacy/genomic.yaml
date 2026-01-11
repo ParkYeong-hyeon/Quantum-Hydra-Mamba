@@ -1,0 +1,121 @@
+# Genomic Experiments Configuration
+# Based on job_scripts/genomic/ and scripts/training/run_ssm_genomic_comparison.py
+
+# Extends base configuration
+_extends: ../base.yaml
+
+# SLURM Configuration (overrides base)
+slurm:
+  account: "m4727_g"
+  constraint: "gpu&hbm80g"
+  qos: "shared"
+  nodes: 1
+  gpus: 1
+  cpus_per_task: 32
+  time: "48:00:00"  # Longer time for genomic experiments
+
+# Model Configurations
+models:
+  quantum_mamba_ssm:
+    name: "QuantumMambaSSM"
+    description: "Quantum Mamba SSM"
+  quantum_hydra_ssm:
+    name: "QuantumHydraSSM"
+    description: "Quantum Hydra SSM"
+  classical_mamba:
+    name: "ClassicalMamba"
+    description: "Classical Mamba Baseline"
+  classical_hydra:
+    name: "ClassicalHydra"
+    description: "Classical Hydra Baseline"
+  quantum_mamba_gated:
+    name: "QuantumMambaGated"
+    description: "Quantum Mamba with Gating"
+  quantum_hydra_gated:
+    name: "QuantumHydraGated"
+    description: "Quantum Hydra with Gating"
+
+# Dataset Configurations
+datasets:
+  demo_human_or_worm:
+    name: "Demo Human or Worm"
+    description: "Small demo dataset for quick testing"
+    max_samples: 2000
+  demo_coding_vs_intergenomic_seqs:
+    name: "Demo Coding vs Intergenomic"
+    description: "Coding vs intergenomic sequences"
+    max_samples: null  # Use all samples
+  human_nontata_promoters:
+    name: "Human Non-TATA Promoters"
+    description: "Promoter classification"
+    max_samples: null
+  human_enhancers_cohn:
+    name: "Human Enhancers (Cohn)"
+    description: "Enhancer classification"
+    max_samples: null
+  human_enhancers_ensembl:
+    name: "Human Enhancers (Ensembl)"
+    description: "Enhancer classification"
+    max_samples: null
+  human_ocr_ensembl:
+    name: "Human OCR (Ensembl)"
+    description: "Open chromatin regions"
+    max_samples: null
+  drosophila_enhancers_stark:
+    name: "Drosophila Enhancers (Stark)"
+    description: "Fly enhancer classification"
+    max_samples: null
+  dummy_mouse_enhancers_ensembl:
+    name: "Dummy Mouse Enhancers"
+    description: "Mouse enhancer classification"
+    max_samples: null
+
+# Training Hyperparameters (overrides base)
+training:
+  n_qubits: 4  # Smaller for genomic (longer sequences)
+  n_layers: 2
+  d_model: 64  # Smaller for genomic
+  d_state: 16
+  n_epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  early_stopping: 10
+  val_ratio: 0.15
+  test_ratio: 0.15
+  # For gated models
+  qlcu_layers: 2
+  hidden_dim: 64
+  chunk_size: 16
+
+# Seeds
+seeds: [2024, 2025, 2026]
+
+# Experiment Configurations
+experiments:
+  # SSM Comparison
+  ssm_comparison:
+    models: [quantum_mamba_ssm, quantum_hydra_ssm, classical_mamba, classical_hydra]
+    datasets: [demo_human_or_worm, demo_coding_vs_intergenomic_seqs]
+    seeds: [2024, 2025, 2026]
+    script: "scripts/training/run_ssm_genomic_comparison.py"
+  
+  # Gated Models
+  gated_genomic:
+    models: [quantum_mamba_gated, quantum_hydra_gated]
+    datasets: [dummy_mouse_enhancers_ensembl, human_enhancers_cohn]
+    seeds: [2024, 2025, 2026, 2027, 2028]
+    script: "scripts/training/run_gated_genomic.py"
+
+# Output Configuration
+output:
+  base_dir: "./results/genomic"
+  logs_dir: "./results/genomic/logs"
+  job_dir: "./job_scripts/genomic"
+
+# Script Configuration
+script:
+  ssm_comparison: "scripts/training/run_ssm_genomic_comparison.py"
+  gated: "scripts/training/run_gated_genomic.py"
+  args:
+    output_dir: "./results/genomic"

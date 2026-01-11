@@ -12,6 +12,17 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.model_selection import train_test_split
 from pathlib import Path
+import sys
+
+# 설정 파일 import (fallback 포함)
+try:
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from config.data_paths import get_genomic_path
+except ImportError:
+    # Fallback: 기본 경로 사용
+    def get_genomic_path():
+        import os
+        return Path(os.getenv('GENOMIC_BENCHMARKS_PATH', Path.home() / '.genomic_benchmarks'))
 
 # Genomic Benchmarks package
 from genomic_benchmarks.loc2seq import download_dataset
@@ -84,9 +95,9 @@ def load_genomic_benchmark(
     np.random.seed(seed)
     torch.manual_seed(seed)
 
-    # Download dataset
+    # Download dataset - 설정 파일에서 기본 경로 가져오기
     if cache_dir is None:
-        cache_dir = Path.home() / '.genomic_benchmarks'
+        cache_dir = get_genomic_path()
 
     print(f"Loading dataset: {dataset_name}")
 

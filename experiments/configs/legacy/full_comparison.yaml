@@ -1,0 +1,102 @@
+# Full Comparison Experiments Configuration
+# Based on job_scripts/full_comparison.sh
+
+# Extends base configuration
+_extends: ../base.yaml
+
+# SLURM Configuration (overrides base)
+slurm:
+  account: "m4727_g"
+  constraint: "gpu&hbm80g"
+  qos: "shared"
+  nodes: 1
+  gpus: 1
+  cpus_per_task: 32
+  time: "48:00:00"  # Longer time for full comparison
+
+# Model Configurations
+# All 6 models for fair comparison
+models:
+  quantum_mamba_ssm:
+    name: "QuantumMambaSSM"
+    description: "Quantum Mamba SSM"
+  quantum_hydra_ssm:
+    name: "QuantumHydraSSM"
+    description: "Quantum Hydra SSM"
+  quantum_mamba_gated:
+    name: "QuantumMambaGated"
+    description: "Quantum Mamba with Gating"
+  quantum_hydra_gated:
+    name: "QuantumHydraGated"
+    description: "Quantum Hydra with Gating"
+  classical_mamba:
+    name: "ClassicalMamba"
+    description: "Classical Mamba Baseline"
+  classical_hydra:
+    name: "ClassicalHydra"
+    description: "Classical Hydra Baseline"
+
+# Dataset Configurations
+# 3 smallest datasets for manageable runtime
+datasets:
+  demo_human_or_worm:
+    name: "Demo Human or Worm"
+    description: "Small demo dataset (~200 seq_len)"
+    max_samples: 500
+    estimated_time: "1-2 hours per seed"
+  
+  demo_coding_vs_intergenomic_seqs:
+    name: "Demo Coding vs Intergenomic"
+    description: "Coding vs intergenomic (~200 seq_len)"
+    max_samples: 500
+    estimated_time: "1-2 hours per seed"
+  
+  drosophila_enhancers_stark:
+    name: "Drosophila Enhancers"
+    description: "Fly enhancer classification (smaller dataset)"
+    max_samples: 500
+    estimated_time: "1-2 hours per seed"
+
+# Training Hyperparameters (overrides base)
+# Same settings for ALL quantum models (fair comparison)
+training:
+  n_qubits: 4  # Smaller for fair comparison
+  qlcu_layers: 2
+  d_model: 64  # Smaller for fair comparison
+  d_state: 16
+  n_layers: 1
+  chunk_size: 16
+  dropout: 0.1
+  n_epochs: 30
+  batch_size: 16
+  learning_rate: 0.001
+  early_stopping: 15
+  val_ratio: 0.15
+  test_ratio: 0.15
+
+# Seeds
+seeds: [2024, 2025, 2026]
+
+# Experiment Configuration
+experiments:
+  # Full comparison: 6 models × 3 datasets × 3 seeds = 54 experiments
+  # Estimated total time: ~9-12 hours
+  full:
+    models: [quantum_mamba_ssm, quantum_hydra_ssm, quantum_mamba_gated, 
+             quantum_hydra_gated, classical_mamba, classical_hydra]
+    datasets: [demo_human_or_worm, demo_coding_vs_intergenomic_seqs, 
+               drosophila_enhancers_stark]
+    seeds: [2024, 2025, 2026]
+    script: "scripts/training/run_full_comparison.py"
+
+# Output Configuration
+output:
+  base_dir: "./results/full_comparison"
+  logs_dir: "./results/full_comparison/logs"
+  job_dir: "./job_scripts"
+
+# Script Configuration
+script:
+  path: "scripts/training/run_full_comparison.py"
+  args:
+    output_dir: "./results/full_comparison"

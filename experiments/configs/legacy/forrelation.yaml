@@ -1,0 +1,154 @@
+# Legacy Forrelation Experiments Configuration
+# Quantum Advantage Testing with Forrelation datasets
+# Based on scripts/job_generation/generate_forrelation_job_scripts.py
+
+# Extends base configuration
+_extends: ../base.yaml
+
+# SLURM Configuration (overrides base)
+slurm:
+  account: "m4807_g"
+  constraint: "gpu&hbm80g"
+  qos: "shared"
+  nodes: 1
+  gpus: 1
+  cpus_per_task: 32
+  time: "24:00:00"
+
+# Model Configurations (Legacy Models)
+models:
+  quantum_hydra:
+    name: "QuantumHydra"
+    description: "Original Quantum Hydra model"
+    type: "legacy"
+  
+  quantum_mamba:
+    name: "QuantumMamba"
+    description: "Original Quantum Mamba model"
+    type: "legacy"
+  
+  quantum_hydra_hybrid:
+    name: "QuantumHydraHybrid"
+    description: "Hybrid Quantum Hydra variant"
+    type: "legacy"
+  
+  quantum_mamba_hybrid:
+    name: "QuantumMambaHybrid"
+    description: "Hybrid Quantum Mamba variant"
+    type: "legacy"
+  
+  classical_hydra:
+    name: "ClassicalHydra"
+    description: "Classical Hydra baseline"
+    type: "baseline"
+  
+  classical_mamba:
+    name: "ClassicalMamba"
+    description: "Classical Mamba baseline"
+    type: "baseline"
+
+# Dataset Configurations
+# Phase 3: Silver Standard - Sample Efficiency
+phase3_datasets:
+  - name: "forrelation_L20"
+    file: "forrelation_L20.pt"
+    description: "Forrelation L=20 (Silver Standard)"
+  - name: "forrelation_L40"
+    file: "forrelation_L40.pt"
+    description: "Forrelation L=40 (Silver Standard)"
+  - name: "forrelation_L80"
+    file: "forrelation_L80.pt"
+    description: "Forrelation L=80 (Silver Standard)"
+  - name: "forrelation_L160"
+    file: "forrelation_L160.pt"
+    description: "Forrelation L=160 (Silver Standard)"
+
+# Phase 4: Gold Standard - Scaling
+phase4_datasets:
+  - name: "forrelation_n8_L40"
+    file: "forrelation_n8_L40.pt"
+    description: "Forrelation n=8, L=40 (Gold Standard)"
+  - name: "forrelation_n8_L80"
+    file: "forrelation_n8_L80.pt"
+    description: "Forrelation n=8, L=80 (Gold Standard)"
+  - name: "forrelation_n8_L160"
+    file: "forrelation_n8_L160.pt"
+    description: "Forrelation n=8, L=160 (Gold Standard)"
+  - name: "forrelation_n8_L320"
+    file: "forrelation_n8_L320.pt"
+    description: "Forrelation n=8, L=320 (Gold Standard)"
+
+# All datasets combined
+datasets:
+  phase3: "phase3_datasets"  # Reference to phase3_datasets
+  phase4: "phase4_datasets"  # Reference to phase4_datasets
+  all: "phase3_datasets + phase4_datasets"  # All 8 datasets
+
+# Training Hyperparameters (overrides base)
+training:
+  n_qubits: 6
+  qlcu_layers: 2
+  d_model: 128
+  d_state: 16
+  learning_rate: 0.001
+  # Note: Other hyperparameters may vary by model
+
+# Seeds
+seeds: [2024, 2025, 2026]  # 3 seeds for statistical significance
+
+# Experiment Configuration
+experiments:
+  # Phase 3: Silver Standard (Sample Efficiency)
+  phase3:
+    models: [quantum_hydra, quantum_hydra_hybrid, quantum_mamba, 
+             quantum_mamba_hybrid, classical_hydra, classical_mamba]
+    datasets: phase3_datasets  # 4 datasets
+    seeds: [2024, 2025, 2026]
+    script: "experiments/run_single_model_forrelation.py"
+    # Total: 6 models × 4 datasets × 3 seeds = 72 experiments
+  
+  # Phase 4: Gold Standard (Scaling)
+  phase4:
+    models: [quantum_hydra, quantum_hydra_hybrid, quantum_mamba, 
+             quantum_mamba_hybrid, classical_hydra, classical_mamba]
+    datasets: phase4_datasets  # 4 datasets
+    seeds: [2024, 2025, 2026]
+    script: "experiments/run_single_model_forrelation.py"
+    # Total: 6 models × 4 datasets × 3 seeds = 72 experiments
+  
+  # All phases combined
+  all:
+    models: [quantum_hydra, quantum_hydra_hybrid, quantum_mamba, 
+             quantum_mamba_hybrid, classical_hydra, classical_mamba]
+    datasets: all  # 8 datasets (phase3 + phase4)
+    seeds: [2024, 2025, 2026]
+    script: "experiments/run_single_model_forrelation.py"
+    # Total: 6 models × 8 datasets × 3 seeds = 144 experiments
+
+# Output Configuration
+output:
+  base_dir: "./results/forrelation_results"
+  logs_dir: "./results/forrelation_results/logs"
+  job_dir: "./job_scripts/forrelation"
+  data_dir: "./forrelation_data"
+
+# Script Configuration
+script:
+  path: "experiments/run_single_model_forrelation.py"
+  args:
+    output_dir: "./results/forrelation_results"
+    data_dir: "./forrelation_data"
+
+# Dataset Generation
+dataset_generation:
+  script: "data_loaders/generate_forrelation_dataset.py"
+  tuning_dataset:
+    num_pairs: 1000
+    n_bits: 6
+    seq_len: 20
+    filename: "forrelation_data/tuning_dataset.pt"
+  challenge_dataset:
+    num_pairs: 5000
+    n_bits: 6
+    seq_len: 20
+    filename: "forrelation_data/challenge_dataset.pt"

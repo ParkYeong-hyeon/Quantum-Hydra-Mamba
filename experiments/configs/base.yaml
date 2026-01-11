@@ -1,0 +1,52 @@
+# Base Configuration
+# Common settings shared across all experiments
+
+# SLURM Configuration
+slurm:
+  # Default account (can be overridden per experiment)
+  account: "m4807_g"
+  constraint: "gpu&hbm80g"
+  qos: "shared"
+  nodes: 1
+  gpus: 1
+  cpus_per_task: 32
+  # Default time limit (can be overridden per experiment)
+  time: "24:00:00"
+
+# Environment Configuration
+environment:
+  # Conda/micromamba setup
+  conda_env: "qhydra"
+  micromamba_path: "/home/connectome/mandy/.local/bin/micromamba"
+  conda_env_path: "/pscratch/sd/j/junghoon/conda-envs/qml_eeg"
+  
+  # Project paths
+  project_root: "/pscratch/sd/j/junghoon/quantum_hydra_mamba"
+  
+  # Environment variables
+  env_vars:
+    PYTORCH_CUDA_ALLOC_CONF: "max_split_size_mb:256"
+    PENNYLANE_DEVICE: "default.qubit"
+
+# Common Training Hyperparameters
+training:
+  # Default hyperparameters (can be overridden per experiment)
+  n_qubits: 6
+  n_layers: 2
+  d_model: 128
+  d_state: 16
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  early_stopping: 10
+  device: "cuda"
+
+# Output Directories
+output:
+  base_dir: "./results"
+  logs_dir: "./logs"
+
+# Data Directories
+data:
+  base_dir: "./data"
+  synthetic_dir: "./data/synthetic_benchmarks"

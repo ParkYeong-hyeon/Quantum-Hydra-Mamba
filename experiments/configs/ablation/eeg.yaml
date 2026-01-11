@@ -1,0 +1,129 @@
+# Ablation Study on PhysioNet EEG Configuration
+# Based on scripts/job_generation/generate_ablation_eeg_jobs.py
+
+# Extends base configuration
+_extends: ../base.yaml
+
+# SLURM Configuration (overrides base)
+slurm:
+  account: "m4727_g"
+  constraint: "gpu&hbm80g"
+  qos: "shared"
+  nodes: 1
+  gpus: 1
+  cpus_per_task: 32
+  time: "24:00:00"
+
+# Model Configurations (14 models from 2×2×3 factorial design)
+models:
+  # Group 1: Quantum Features → Classical Mixing
+  "1a":
+    name: "QuantumTransformer"
+    group: 1
+    description: "Quantum Features → Classical Attention"
+  "1b":
+    name: "QuantumMambaSSM"
+    group: 1
+    description: "Quantum Features → Classical Mamba SSM"
+  "1c":
+    name: "QuantumHydraSSM"
+    group: 1
+    description: "Quantum Features → Classical Hydra SSM"
+  
+  # Group 2: Classical Features → Quantum Mixing
+  "2a":
+    name: "ClassicalQuantumAttention"
+    group: 2
+    description: "Classical Features → Quantum Attention"
+  "2b":
+    name: "ClassicalMambaQuantumSSM"
+    group: 2
+    description: "Classical Features → Quantum Mamba SSM"
+  "2c":
+    name: "ClassicalHydraQuantumSSM"
+    group: 2
+    description: "Classical Features → Quantum Hydra SSM"
+  "2d":
+    name: "QuantumMambaHydraSSM"
+    group: 2
+    description: "Classical Features → Quantum Mamba-Hydra SSM"
+  "2e":
+    name: "QuantumHydraHydraSSM"
+    group: 2
+    description: "Classical Features → Quantum Hydra-Hydra SSM"
+  
+  # Group 3: Classical Baselines
+  "3a":
+    name: "ClassicalTransformer"
+    group: 3
+    description: "Classical Transformer Baseline"
+  "3b":
+    name: "TrueClassicalMamba"
+    group: 3
+    description: "True Classical Mamba Baseline"
+  "3c":
+    name: "TrueClassicalHydra"
+    group: 3
+    description: "True Classical Hydra Baseline"
+  
+  # Group 4: E2E Quantum
+  "4a":
+    name: "QuantumTransformerE2E"
+    group: 4
+    description: "End-to-End Quantum Transformer"
+  "4b":
+    name: "QuantumMambaE2E"
+    group: 4
+    description: "End-to-End Quantum Mamba"
+  "4c":
+    name: "QuantumHydraE2E"
+    group: 4
+    description: "End-to-End Quantum Hydra"
+  "4d":
+    name: "QuantumMambaE2ESuperposition"
+    group: 4
+    description: "End-to-End Quantum Mamba with Superposition"
+  "4e":
+    name: "QuantumHydraE2ESuperposition"
+    group: 4
+    description: "End-to-End Quantum Hydra with Superposition"
+
+# Sampling Frequencies (Sequence Length Conditions)
+sampling_freqs: [40, 80, 160]  # Hz → ~124, 248, 496 timesteps
+
+# Training Hyperparameters (overrides base)
+training:
+  n_qubits: 6
+  n_layers: 2
+  d_model: 128
+  d_state: 16
+  n_epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  early_stopping: 10
+  sample_size: 109  # All 109 subjects
+  resume: true  # Automatically continue from checkpoint
+
+# Seeds
+seeds: [2024, 2025, 2026]
+
+# Experiment Combinations
+experiments:
+  # All combinations will be generated from:
+  # - models: all model IDs (14 models)
+  # - sampling_freqs: [40, 80, 160] Hz
+  # - seeds: [2024, 2025, 2026]
+  # Total: 14 × 3 × 3 = 126 experiments
+
+# Output Configuration
+output:
+  base_dir: "./results/ablation_eeg"
+  logs_dir: "./results/ablation_eeg/logs"
+  job_dir: "./jobs/ablation_eeg"
+
+# Script Configuration
+script:
+  path: "scripts/training/run_ablation_eeg.py"
+  args:
+    output_dir: "./results/ablation_eeg"

@@ -177,9 +177,17 @@ def load_checkpoint(checkpoint_path, model, optimizer, scheduler, device):
     return checkpoint
 
 
-def load_data(task, seq_len, batch_size, num_markers=8, seed=2024, data_dir="./data/synthetic_benchmarks"):
+def load_data(task, seq_len, batch_size, num_markers=8, seed=2024, data_dir=None):
     """Load dataset for the specified task."""
-    data_dir = Path(data_dir)
+    # 설정 파일에서 기본값 가져오기 (fallback 포함)
+    if data_dir is None:
+        try:
+            from config.data_paths import get_synthetic_path
+            data_dir = get_synthetic_path()
+        except ImportError:
+            data_dir = Path("./data/synthetic_benchmarks")
+    else:
+        data_dir = Path(data_dir)
 
     if task == 'forrelation':
         from data_loaders.forrelation_dataloader import get_forrelation_dataloader
@@ -1031,8 +1039,9 @@ Examples:
                         help="Random seed")
     parser.add_argument("--output-dir", type=str, default="./results/synthetic_benchmarks",
                         help="Output directory")
-    parser.add_argument("--data-dir", type=str, default="./data/synthetic_benchmarks",
-                        help="Data directory")
+    # 기본값을 None으로 설정하고, load_data 함수에서 설정 파일 사용
+    parser.add_argument("--data-dir", type=str, default=None,
+                        help="Data directory (default: from config/data_paths.py)")
     parser.add_argument("--device", type=str, default="cuda",
                         help="Device (cuda/cpu)")
     parser.add_argument("--resume", action="store_true",

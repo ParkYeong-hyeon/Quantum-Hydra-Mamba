@@ -1,0 +1,92 @@
+# Gated Models Experiments Configuration
+# Based on job_scripts/gated/
+
+# Extends base configuration
+_extends: ../base.yaml
+
+# SLURM Configuration (overrides base)
+slurm:
+  account: "m4727_g"
+  constraint: "gpu&hbm80g"
+  qos: "shared"
+  nodes: 1
+  gpus: 1
+  cpus_per_task: 32
+  time: "24:00:00"
+  array: true  # Use array jobs
+
+# Model Configurations
+models:
+  quantum_mamba_gated:
+    name: "QuantumMambaGated"
+    description: "Quantum Mamba with Gating Mechanism"
+  quantum_hydra_gated:
+    name: "QuantumHydraGated"
+    description: "Quantum Hydra with Gating Mechanism"
+
+# Dataset Configurations
+datasets:
+  eeg:
+    name: "PhysioNet EEG"
+    description: "EEG Motor Imagery Classification"
+    sample_size: 50
+    sampling_freq: 80
+  
+  dna:
+    name: "DNA Sequences"
+    description: "DNA Sequence Classification"
+    encoding: "onehot"
+  
+  genomic:
+    name: "Genomic Benchmarks"
+    description: "Genomic sequence classification"
+    datasets: [dummy_mouse_enhancers_ensembl, human_enhancers_cohn]
+
+# Training Hyperparameters (overrides base)
+training:
+  n_qubits: 6
+  qlcu_layers: 2
+  hidden_dim: 64
+  chunk_size: 8  # For EEG
+  n_epochs: 50
+  batch_size: 32
+  learning_rate: 0.001
+  early_stopping_patience: 10
+
+# Seeds
+seeds: [2024, 2025, 2026, 2027, 2028]
+
+# Experiment Configurations
+experiments:
+  eeg:
+    models: [quantum_mamba_gated, quantum_hydra_gated]
+    dataset: eeg
+    seeds: [2024, 2025, 2026, 2027, 2028]
+    script: "scripts/training/run_gated_models.py"
+    # Array job: 2 models × 5 seeds = 10 jobs
+  
+  dna:
+    models: [quantum_mamba_gated, quantum_hydra_gated]
+    dataset: dna
+    seeds: [2024, 2025, 2026, 2027, 2028]
+    script: "scripts/training/run_gated_models.py"
+  
+  genomic:
+    models: [quantum_mamba_gated, quantum_hydra_gated]
+    dataset: genomic
+    seeds: [2024, 2025, 2026, 2027, 2028]
+    script: "scripts/training/run_gated_genomic.py"
+
+# Output Configuration
+output:
+  base_dir: "./results/gated"
+  logs_dir: "./results/gated/logs"
+  job_dir: "./job_scripts/gated"
+
+# Script Configuration
+script:
+  eeg: "scripts/training/run_gated_models.py"
+  dna: "scripts/training/run_gated_models.py"
+  genomic: "scripts/training/run_gated_genomic.py"
+  args:
+    output_dir: "./results/gated"

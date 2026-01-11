@@ -3,6 +3,18 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 import mne
 from sklearn.model_selection import train_test_split
+import sys
+from pathlib import Path
+
+# 설정 파일 import (fallback 포함)
+try:
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from config.data_paths import get_physionet_path
+except ImportError:
+    # Fallback: 기본 경로 사용 (환경 변수 또는 하드코딩)
+    def get_physionet_path():
+        import os
+        return Path(os.getenv('PHYSIONET_EEG_PATH', '/pscratch/sd/j/junghoon/PhysioNet_EEG'))
 
 print('MNE Version :', mne.__version__)
 
@@ -53,13 +65,13 @@ def load_eeg_ts_revised(seed, device, batch_size, sampling_freq, sample_size):
         IMAGINE_OPEN_CLOSE_LEFT_RIGHT_FIST = [4, 8, 12]
 
         # Load file paths for the specified subjects with update_path=True
-        # Use absolute path to the existing PhysioNet data
-        data_path = "/pscratch/sd/j/junghoon/PhysioNet_EEG"
+        # Use path from config (environment variable or default)
+        data_path = get_physionet_path()
         physionet_paths = [
             mne.datasets.eegbci.load_data(
                 subjects=subj_id,
                 runs=IMAGINE_OPEN_CLOSE_LEFT_RIGHT_FIST,
-                path=data_path,
+                path=str(data_path),
                 update_path=True  # Added to avoid interactive prompt
             ) for subj_id in subject_list
         ]
