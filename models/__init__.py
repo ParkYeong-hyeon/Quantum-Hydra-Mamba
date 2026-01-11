@@ -1,109 +1,71 @@
 """
 Quantum Hydra/Mamba/Transformer Models Package
 
-This package contains models for the ABLATION STUDY comparing three quantum
-mixing mechanisms with IDENTICAL classical feature extraction:
+This package contains models for the ABLATION STUDY comparing quantum architectures
+organized in a hierarchical structure:
 
-MODELS FOR ABLATION STUDY:
---------------------------
-1. QTSQuantumTransformer (BASELINE): Quantum Attention (QSVT + LCU global mixing)
-2. QTSQuantumHydraSSMAdvanced: Quantum Bidirectional SSM (QSVT + LCU combination)
-3. QTSQuantumMambaSSMAdvanced: Quantum Selective SSM (QSVT + input-dependent Δ)
+- core/: Reusable components (encoders, quantum cores, gated modules)
+- ablation/: Ablation study models organized by groups (Group 1-4)
+- qts/: QTS wrapper models for initial experiments
+- legacy/: Previous versions (reference only)
 
-All three models share the IDENTICAL QTSFeatureEncoder (Conv2d + GLU).
-The ONLY difference is the quantum mixing mechanism.
-
-Mixing Mechanism Comparison:
-----------------------------
-| Model | Mixing Type | Key Feature |
-|-------|-------------|-------------|
-| Transformer | Global Attention | LCU mixes ALL timesteps simultaneously |
-| Hydra SSM | Bidirectional | Forward + Backward sequential passes + LCU |
-| Mamba SSM | Selective | Input-dependent Δ controls forgetting |
-
-Basic vs Advanced Models:
--------------------------
-- Basic: RX,RY,RZ + linear CNOT, PauliZ only measurement
-- Advanced: sim14 ansatz, PauliX,Y,Z multi-observable (RECOMMENDED)
-
-Usage for Ablation Study:
-    from models import (
-        QTSQuantumTransformer,           # Baseline: Quantum Attention
-        QTSQuantumHydraSSMAdvanced,      # Quantum Bidirectional SSM
-        QTSQuantumMambaSSMAdvanced,      # Quantum Selective SSM
-    )
-
-    # All models use identical encoder for fair comparison
-    transformer = QTSQuantumTransformer(feature_dim=4, n_timesteps=200, num_classes=2)
-    hydra = QTSQuantumHydraSSMAdvanced(feature_dim=4, n_timesteps=200, num_classes=2)
-    mamba = QTSQuantumMambaSSMAdvanced(feature_dim=4, n_timesteps=200, num_classes=2)
-
-Author: Junghoon Park
-Date: December 2024
+For backward compatibility, all models can still be imported from models.*
 """
 
 # ============================================
-# Classical Encoder (shared across ALL models)
+# Core Components (re-exported for convenience)
 # ============================================
-from models.qts_encoder import (
+from models.core import (
+    # Encoders
     QTSFeatureEncoder,
     Conv2dFeatureExtractor,
     GatedFeedForward,
     Conv2dGLUPreprocessor,
     create_qts_encoder,
+    # Quantum Cores
+    QuantumAttentionCore,
+    unified_ansatz_circuit,
+    sim14_circuit,
+    QuantumHydraSSMCore,
+    QuantumMambaSSMCore,
+    QuantumHydraSSMCoreAdvanced,
+    QuantumMambaSSMCoreAdvanced,
+    # Gated
+    QuantumFeatureExtractor,
+    QuantumStateProcessor,
+    QuantumSuperpositionBranches,
+    ChunkedGatedSuperposition,
+    QuantumMambaGated,
+    QuantumHydraGated,
 )
 
 # ============================================
-# Quantum Cores
+# QTS Wrapper Models (Initial Ablation Study)
 # ============================================
-# Basic SSM Cores
-from models.quantum_hydra_ssm_core import QuantumHydraSSMCore
-from models.quantum_mamba_ssm_core import QuantumMambaSSMCore
-
-# Advanced SSM Cores (sim14 + multi-observable)
-from models.quantum_hydra_ssm_core_advanced import QuantumHydraSSMCoreAdvanced
-from models.quantum_mamba_ssm_core_advanced import QuantumMambaSSMCoreAdvanced
-
-# Quantum Attention Core (for Transformer)
-from models.quantum_attention_core import QuantumAttentionCore, sim14_circuit
-
-# ============================================
-# Basic Complete Models
-# ============================================
-from models.QTSQuantumHydraSSM import (
+from models.qts import (
+    QTSQuantumTransformer,
+    create_qts_quantum_transformer,
     QTSQuantumHydraSSM,
     create_qts_quantum_hydra_ssm,
-)
-from models.QTSQuantumMambaSSM import (
-    QTSQuantumMambaSSM,
-    create_qts_quantum_mamba_ssm,
-)
-
-# ============================================
-# Advanced Complete Models (RECOMMENDED for Ablation)
-# ============================================
-from models.QTSQuantumHydraSSMAdvanced import (
     QTSQuantumHydraSSMAdvanced,
     create_qts_quantum_hydra_ssm_advanced,
-)
-from models.QTSQuantumMambaSSMAdvanced import (
+    QTSQuantumMambaSSM,
+    create_qts_quantum_mamba_ssm,
     QTSQuantumMambaSSMAdvanced,
     create_qts_quantum_mamba_ssm_advanced,
 )
 
 # ============================================
-# Quantum Transformer (BASELINE for Ablation)
+# Ablation Study Models (2×2×3 Factorial Design)
 # ============================================
-from models.QTSQuantumTransformer import (
-    QTSQuantumTransformer,
-    create_qts_quantum_transformer,
-)
-
-# ============================================
-# Classical Features -> Quantum Mixing Models
-# (Inverse architecture for ablation study)
-# ============================================
-from models.QuantumMixingSSM import (
+from models.ablation import (
+    # Group 1: Quantum Features → Classical Mixing
+    QuantumTransformer,
+    QuantumHydraTransformer,
+    create_quantum_transformer,
+    QuantumMambaSSM,
+    QuantumHydraSSM,
+    # Group 2: Classical Features → Quantum Mixing
     ClassicalMambaQuantumSSM,
     ClassicalHydraQuantumSSM,
     ClassicalQuantumAttention,
@@ -111,100 +73,71 @@ from models.QuantumMixingSSM import (
     QuantumSSMCore,
     QuantumBidirectionalSSMCore,
     QuantumAttentionMixingCore,
-)
-
-# ============================================
-# Classical Self-Attention Transformer
-# (Pure classical baseline with attention)
-# ============================================
-from models.ClassicalTransformer import (
+    QuantumMambaHydraSSM,
+    QuantumHydraHydraSSM,
+    QuantumHydraSSMCore,
+    QuantumHydraSSMBidirectional,
+    # Group 3: Classical Baseline
     ClassicalTransformer,
     ClassicalHydraTransformer,
     create_classical_transformer,
-)
-
-# ============================================
-# Quantum Features -> Full Transformer Attention
-# (Proper transformer attention, not chunked)
-# ============================================
-from models.QuantumTransformer import (
-    QuantumTransformer,
-    QuantumHydraTransformer,
-    create_quantum_transformer,
-)
-
-# ============================================
-# Quantum Features -> Classical SSM Mixing
-# (Completes Group 1 of the 2x2x3 ablation study)
-# ============================================
-from models.QuantumSSM import (
-    QuantumMambaSSM,
-    QuantumHydraSSM,
-)
-
-# ============================================
-# End-to-End Quantum Models
-# (Quantum Features -> Quantum Mixing -> Single Measurement)
-# NO intermediate measurements - true quantum coherence
-# ============================================
-from models.QuantumE2E import (
+    TrueClassicalMamba,
+    TrueClassicalHydra,
+    # Group 4: E2E Quantum
     QuantumMambaE2E,
     QuantumHydraE2E,
     QuantumTransformerE2E,
     create_quantum_mamba_e2e,
     create_quantum_hydra_e2e,
     create_quantum_transformer_e2e,
+    QuantumMambaE2E_Superposition,
+    QuantumHydraE2E_Superposition,
+    QuantumE2ESuperpositionCore,
+    create_quantum_mamba_e2e_superposition,
+    create_quantum_hydra_e2e_superposition,
 )
 
+# ============================================
 # Export all public symbols
+# ============================================
 __all__ = [
-    # ============================================
-    # Encoder (shared by all)
-    # ============================================
+    # Core Components
     'QTSFeatureEncoder',
     'Conv2dFeatureExtractor',
     'GatedFeedForward',
     'Conv2dGLUPreprocessor',
     'create_qts_encoder',
-
-    # ============================================
-    # Quantum Cores
-    # ============================================
-    # Basic SSM Cores
+    'QuantumAttentionCore',
+    'unified_ansatz_circuit',
+    'sim14_circuit',
     'QuantumHydraSSMCore',
     'QuantumMambaSSMCore',
-    # Advanced SSM Cores
     'QuantumHydraSSMCoreAdvanced',
     'QuantumMambaSSMCoreAdvanced',
-    # Attention Core
-    'QuantumAttentionCore',
-    'sim14_circuit',
-
-    # ============================================
-    # Basic Complete Models
-    # ============================================
-    'QTSQuantumHydraSSM',
-    'QTSQuantumMambaSSM',
-    'create_qts_quantum_hydra_ssm',
-    'create_qts_quantum_mamba_ssm',
-
-    # ============================================
-    # Advanced Complete Models (RECOMMENDED)
-    # ============================================
-    'QTSQuantumHydraSSMAdvanced',
-    'QTSQuantumMambaSSMAdvanced',
-    'create_qts_quantum_hydra_ssm_advanced',
-    'create_qts_quantum_mamba_ssm_advanced',
-
-    # ============================================
-    # Quantum Transformer (BASELINE)
-    # ============================================
+    'QuantumFeatureExtractor',
+    'QuantumStateProcessor',
+    'QuantumSuperpositionBranches',
+    'ChunkedGatedSuperposition',
+    'QuantumMambaGated',
+    'QuantumHydraGated',
+    # QTS Wrapper Models
     'QTSQuantumTransformer',
     'create_qts_quantum_transformer',
-
-    # ============================================
-    # Classical Features -> Quantum Mixing Models
-    # ============================================
+    'QTSQuantumHydraSSM',
+    'create_qts_quantum_hydra_ssm',
+    'QTSQuantumHydraSSMAdvanced',
+    'create_qts_quantum_hydra_ssm_advanced',
+    'QTSQuantumMambaSSM',
+    'create_qts_quantum_mamba_ssm',
+    'QTSQuantumMambaSSMAdvanced',
+    'create_qts_quantum_mamba_ssm_advanced',
+    # Ablation Study Models - Group 1
+    'QuantumTransformer',
+    'QuantumHydraTransformer',
+    'create_quantum_transformer',
+    'QuantumMambaSSM',
+    'QuantumHydraSSM',
+    # Ablation Study Models - Group 2
     'ClassicalMambaQuantumSSM',
     'ClassicalHydraQuantumSSM',
     'ClassicalQuantumAttention',
@@ -212,40 +145,32 @@ __all__ = [
     'QuantumSSMCore',
     'QuantumBidirectionalSSMCore',
     'QuantumAttentionMixingCore',
-
-    # ============================================
-    # Classical Self-Attention Transformer
-    # ============================================
+    'QuantumMambaHydraSSM',
+    'QuantumHydraHydraSSM',
+    'QuantumHydraSSMCore',
+    'QuantumHydraSSMBidirectional',
+    # Ablation Study Models - Group 3
     'ClassicalTransformer',
     'ClassicalHydraTransformer',
     'create_classical_transformer',
-
-    # ============================================
-    # Quantum Features -> Full Transformer Attention
-    # ============================================
-    'QuantumTransformer',
-    'QuantumHydraTransformer',
-    'create_quantum_transformer',
-
-    # ============================================
-    # Quantum Features -> Classical SSM Mixing
-    # ============================================
-    'QuantumMambaSSM',
-    'QuantumHydraSSM',
-
-    # ============================================
-    # End-to-End Quantum Models (Quantum -> Quantum)
-    # ============================================
+    'TrueClassicalMamba',
+    'TrueClassicalHydra',
+    # Ablation Study Models - Group 4
     'QuantumMambaE2E',
     'QuantumHydraE2E',
     'QuantumTransformerE2E',
     'create_quantum_mamba_e2e',
     'create_quantum_hydra_e2e',
     'create_quantum_transformer_e2e',
+    'QuantumMambaE2E_Superposition',
+    'QuantumHydraE2E_Superposition',
+    'QuantumE2ESuperpositionCore',
+    'create_quantum_mamba_e2e_superposition',
+    'create_quantum_hydra_e2e_superposition',
 ]
 
 # Version
-__version__ = '3.0.0'
+__version__ = '4.0.0'
 
 # ============================================
 # Quick Reference for Ablation Study
