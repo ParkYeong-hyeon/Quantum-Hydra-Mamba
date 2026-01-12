@@ -5,8 +5,6 @@
 echo "Submitting 108 ablation study jobs..."
 echo "Press Ctrl+C to cancel..."
 sleep 3
-
-
 # ===== 40 Hz Jobs =====
 sbatch ./jobs/ablation_eeg/40Hz/abl_1a_40Hz_s2024.sh
 sbatch ./jobs/ablation_eeg/40Hz/abl_1a_40Hz_s2025.sh

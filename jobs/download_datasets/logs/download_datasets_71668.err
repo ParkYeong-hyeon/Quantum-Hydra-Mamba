@@ -1,0 +1,4 @@
+/var/lib/slurm-llnl/slurmd/job71668/slurm_script: line 42: /home/connectome/mandy/.conda/envs/qhydra/bin/python: No such file or directory
+/var/lib/slurm-llnl/slurmd/job71668/slurm_script: line 50: /home/connectome/mandy/.conda/envs/qhydra/bin/python: No such file or directory
+/var/lib/slurm-llnl/slurmd/job71668/slurm_script: line 70: /home/connectome/mandy/.conda/envs/qhydra/bin/python: No such file or directory
+/var/lib/slurm-llnl/slurmd/job71668/slurm_script: line 87: /home/connectome/mandy/.conda/envs/qhydra/bin/python: No such file or directory

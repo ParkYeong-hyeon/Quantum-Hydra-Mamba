@@ -1,0 +1,23 @@
+Not a conda environment: /home/connectome/mandy/.conda/envs/qhydra
+Traceback (most recent call last):
+  File "scripts/mandy_download_all_datasets.py", line 82, in download_synthetic_datasets
+    gen_module.generate_forrelation_datasets(data_dir, seed)
+  File "scripts/generate_all_synthetic_datasets.py", line 30, in generate_forrelation_datasets
+    from data_loaders.generate_forrelation_dataset import generate_dataset as generate_forrelation_dataset
+  File "./data_loaders/__init__.py", line 15, in <module>
+    from .eeg import (
+  File "./data_loaders/eeg/__init__.py", line 10, in <module>
+    from .Load_FACED_EEG import (
+  File "./data_loaders/eeg/Load_FACED_EEG.py", line 29, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
+Traceback (most recent call last):
+  File "scripts/mandy_download_all_datasets.py", line 113, in download_dna_dataset
+    from data_loaders.genomic.Load_DNA_Sequences import download_promoter_dataset
+  File "./data_loaders/__init__.py", line 15, in <module>
+    from .eeg import (
+  File "./data_loaders/eeg/__init__.py", line 10, in <module>
+    from .Load_FACED_EEG import (
+  File "./data_loaders/eeg/Load_FACED_EEG.py", line 29, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'

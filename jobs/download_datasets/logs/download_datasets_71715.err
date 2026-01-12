@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "<string>", line 2, in <module>
+  File "/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/config/__init__.py", line 17, in <module>
+    from .job_config import (
+ImportError: cannot import name 'MICROMAMBA_PATH' from 'config.job_config' (/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/config/job_config.py)
+Traceback (most recent call last):
+  File "/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/scripts/mandy_download_all_datasets.py", line 370, in <module>
+    main()
+  File "/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/scripts/mandy_download_all_datasets.py", line 324, in main
+    check_and_create_dirs()
+  File "/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/scripts/mandy_download_all_datasets.py", line 37, in check_and_create_dirs
+    from config.data_paths import DATA_DIRS
+  File "/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/config/__init__.py", line 17, in <module>
+    from .job_config import (
+ImportError: cannot import name 'MICROMAMBA_PATH' from 'config.job_config' (/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/config/job_config.py)
+Traceback (most recent call last):
+  File "<string>", line 2, in <module>
+  File "/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/config/__init__.py", line 17, in <module>
+    from .job_config import (
+ImportError: cannot import name 'MICROMAMBA_PATH' from 'config.job_config' (/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/config/job_config.py)

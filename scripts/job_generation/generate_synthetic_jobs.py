@@ -18,8 +18,21 @@ Usage:
 
 import os
 import argparse
+import sys
 from pathlib import Path
 from itertools import product
+
+# Add parent directory to path to import config
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from config import (
+    PROJECT_ROOT,
+    PY,
+    get_output_dir,
+    get_jobs_dir,
+    get_script_path,
+    get_slurm_config,
+)
 
 # Model configurations with estimated runtime (hours)
 # All models use 24:00:00 as requested
@@ -55,47 +68,54 @@ TASK_CONFIGS = {
 # Default seeds
 DEFAULT_SEEDS = [2024, 2025, 2026]
 
+# SLURM Configuration (from config)
+slurm_config = get_slurm_config()
+SLURM_ACCOUNT = slurm_config['account']
+SLURM_CONSTRAINT = slurm_config['constraint']
+SLURM_QOS = slurm_config['qos']
+SLURM_NODES = slurm_config['nodes']
+SLURM_GPUS = slurm_config['gpus']
+SLURM_CPUS = slurm_config['cpus_per_task']
+
 # SLURM template
-SLURM_TEMPLATE = '''#!/bin/bash
-#SBATCH --job-name={job_name}
-#SBATCH --account=m4807_g
-#SBATCH --constraint=gpu&hbm80g
-#SBATCH --qos=shared
-#SBATCH --time={time}
-#SBATCH --nodes=1
-#SBATCH --gpus=1
-#SBATCH --cpus-per-task=32
-#SBATCH --output={output_dir}/logs/{job_name}_%j.out
-#SBATCH --error={output_dir}/logs/{job_name}_%j.err
+SLURM_TEMPLATE = f'''#!/bin/bash
+#SBATCH --job-name={{job_name}}
+#SBATCH --account={SLURM_ACCOUNT}
+#SBATCH --constraint={SLURM_CONSTRAINT}
+#SBATCH --qos={SLURM_QOS}
+#SBATCH --time={{time}}
+#SBATCH --nodes={SLURM_NODES}
+#SBATCH --gpus={SLURM_GPUS}
+#SBATCH --cpus-per-task={SLURM_CPUS}
+#SBATCH --output={{output_dir}}/logs/{{job_name}}_%j.out
+#SBATCH --error={{output_dir}}/logs/{{job_name}}_%j.err
 
 # ============================================
 # Synthetic Benchmark Experiment
 # ============================================
-# Model: {model_id} ({model_name})
-# Task: {task}
-# Sequence Length: {seq_len}
-# Seed: {seed}
+# Model: {{model_id}} ({{model_name}})
+# Task: {{task}}
+# Sequence Length: {{seq_len}}
+# Seed: {{seed}}
 # ============================================
 
-echo "Starting job: {job_name}"
+echo "Starting job: {{job_name}}"
 echo "Date: $(date)"
 echo "Host: $(hostname)"
 echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
 
-# Activate micromamba environment
-MICROMAMBA_PATH="/home/connectome/mandy/.local/bin/micromamba"
-eval "$($MICROMAMBA_PATH shell hook --shell bash)"
-$MICROMAMBA_PATH activate qhydra
+# Use Python directly from environment
+PYTHON_CMD="{PY}"
 
 # Navigate to project directory
-cd /pscratch/sd/j/junghoon/quantum_hydra_mamba
+cd {str(PROJECT_ROOT)}
 
 # Set environment variables
 export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:256
 export PENNYLANE_DEVICE=default.qubit
 
 # Run experiment
-python scripts/training/run_synthetic_benchmark.py \\
+$PYTHON_CMD {str(get_script_path('run_synthetic_benchmark.py'))} \\
     --model-id {model_id} \\
     --task {task} \\
     --seq-len {seq_len} \\
@@ -142,12 +162,10 @@ echo "Array job started"
 echo "Task ID: $SLURM_ARRAY_TASK_ID"
 echo "Date: $(date)"
 
-# Activate micromamba environment
-MICROMAMBA_PATH="/home/connectome/mandy/.local/bin/micromamba"
-eval "$($MICROMAMBA_PATH shell hook --shell bash)"
-$MICROMAMBA_PATH activate qhydra
+# Use Python directly from environment
+PYTHON_CMD="{PY}"
 
-cd /pscratch/sd/j/junghoon/quantum_hydra_mamba
+cd {str(PROJECT_ROOT)}
 
 export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:256
 export PENNYLANE_DEVICE=default.qubit
@@ -173,7 +191,7 @@ SEED=${{SEEDS[$seed_idx]}}
 
 echo "Running: Model=$MODEL, Task={task}, SeqLen=$SEQ_LEN, Seed=$SEED"
 
-python scripts/training/run_synthetic_benchmark.py \\
+$PYTHON_CMD {str(get_script_path('run_synthetic_benchmark.py'))} \\
     --model-id $MODEL \\
     --task {task} \\
     --seq-len $SEQ_LEN \\
@@ -327,8 +345,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
-    parser.add_argument("--output-dir", type=str, default="./slurm_jobs/synthetic",
-                        help="Output directory for SLURM scripts")
+    # Default output directory from config
+    default_output_dir = str(get_jobs_dir('synthetic'))
+    
+    parser.add_argument("--output-dir", type=str, default=default_output_dir,
+                        help=f"Output directory for SLURM scripts (default: {default_output_dir})")
     parser.add_argument("--models", nargs='+',
                         default=['1a', '1b', '1c', '2a', '2d', '2e', '3a', '3b', '3c', '4a', '4d', '4e'],
                         help="Models to include")

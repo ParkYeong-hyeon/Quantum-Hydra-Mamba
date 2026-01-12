@@ -1,0 +1,152 @@
+==========================================
+Starting dataset download job
+==========================================
+Job name: download_datasets
+Date: Mon 12 Jan 2026 07:21:23 PM KST
+Host: node4
+Working directory: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba
+==========================================
+Python path: /scratch/connectome/mandy/miniforge/bin/python
+Python version: Python 3.12.12
+
+Checking data directory structure...
+Data root: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba
+Data directories:
+  synthetic: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/synthetic_benchmarks
+    ✓ Directory exists
+  dna: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/dna
+    ✓ Directory exists
+  seed: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/SEED
+    ✓ Directory exists
+  faced: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/Processed_data
+    ✓ Directory exists
+  physionet: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/physionet
+    ✓ Directory exists
+  genomic: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/genomic_benchmarks
+    ✓ Directory exists
+
+Running dataset download script...
+Command: /scratch/connectome/mandy/miniforge/bin/python scripts/mandy_download_all_datasets.py 
+
+======================================================================
+  Quantum-Hydra-Mamba: Dataset Downloader
+======================================================================
+
+
+======================================================================
+  Creating Data Directories
+======================================================================
+  ✓ synthetic: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/synthetic_benchmarks
+  ✓ dna: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/dna
+  ✓ seed: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/SEED
+  ✓ faced: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/Processed_data
+  ✓ physionet: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet
+  ✓ genomic: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/genomic_benchmarks
+
+
+======================================================================
+  Synthetic Benchmarks
+======================================================================
+Data directory: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/synthetic_benchmarks
+Seed: 2024
+
+  📦 Generating Forrelation datasets...
+
+============================================================
+Generating Forrelation Datasets
+============================================================
+Warning: TorchEEG not installed. Install with: pip install torcheeg
+Warning: TorchEEG not installed. Install with: pip install torcheeg
+MNE Version : 1.11.0
+  ❌ Error generating synthetic datasets: cannot import name 'generate_dataset' from 'generate_dataset' (unknown location)
+
+======================================================================
+  DNA Promoter Dataset
+======================================================================
+  📥 Downloading DNA Promoter dataset...
+     Using existing download logic from Load_DNA_Sequences...
+Downloading promoter dataset from https://archive.ics.uci.edu/ml/machine-learning-databases/molecular-biology/promoter-gene-sequences/promoters.data...
+Downloaded to data/dna/promoters.data
+  ✅ Downloaded to: data/dna/promoters.data
+
+======================================================================
+  Genomic Benchmarks
+======================================================================
+Cache directory: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/genomic_benchmarks
+Datasets to download: ['human_nontata_promoters', 'demo_human_or_worm', 'demo_coding_vs_intergenomic_seqs']
+  📥 Downloading human_nontata_promoters...
+  ✅ human_nontata_promoters downloaded successfully!
+  📥 Downloading demo_human_or_worm...
+  ✅ demo_human_or_worm downloaded successfully!
+  📥 Downloading demo_coding_vs_intergenomic_seqs...
+  ✅ demo_coding_vs_intergenomic_seqs downloaded successfully!
+  ✅ Genomic Benchmarks ready!
+
+======================================================================
+  PhysioNet EEG Dataset
+======================================================================
+Data path: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet
+MNE version: 1.11.0
+  📥 Downloading PhysioNet EEG data (first 5 subjects for testing)...
+     Note: This may take a while. Full dataset will be downloaded on first use.
+     Downloading subject 1...
+Downloading EEGBCI data
+Attempting to create new mne-python configuration file:
+/home/connectome/mandy/.mne/mne-python.json
+Could not read the /home/connectome/mandy/.mne/mne-python.json json file during the writing. Assuming it is empty. Got: Expecting value: line 1 column 1 (char 0)
+Download complete in 25s (7.4 MB)
+     ✓ Subject 1 downloaded
+     Downloading subject 2...
+Downloading EEGBCI data
+Download complete in 26s (7.3 MB)
+     ✓ Subject 2 downloaded
+     Downloading subject 3...
+Downloading EEGBCI data
+Download complete in 25s (7.4 MB)
+     ✓ Subject 3 downloaded
+     Downloading subject 4...
+Downloading EEGBCI data
+Download complete in 27s (7.3 MB)
+     ✓ Subject 4 downloaded
+     Downloading subject 5...
+Downloading EEGBCI data
+Download complete in 26s (7.3 MB)
+     ✓ Subject 5 downloaded
+  ✅ PhysioNet EEG initial download complete!
+     Note: Remaining subjects will be downloaded automatically on first use.
+
+======================================================================
+  Download Summary
+======================================================================
+  synthetic      : ❌ Failed
+  dna            : ✅ Success
+  genomic        : ✅ Success
+  physionet      : ✅ Success
+
+Total time: 1257.2 seconds
+
+⚠️  Some datasets failed to download.
+   They will be downloaded automatically on first use.
+
+
+==========================================
+✅ Dataset download job completed successfully!
+End time: Mon 12 Jan 2026 07:42:22 PM KST
+==========================================
+
+Verifying downloaded datasets...
+Dataset verification:
+--------------------------------------------------
+Synthetic benchmarks: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/synthetic_benchmarks
+  Forrelation: 0 files
+  Adding Problem: 0 files
+  Selective Copy: 0 files
+DNA dataset: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/dna/promoters.data
+  ✓ File exists (7.0 KB)
+Genomic benchmarks: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/genomic_benchmarks
+  3 datasets found
+    ✓ demo_human_or_worm
+    ✓ human_nontata_promoters
+    ✓ demo_coding_vs_intergenomic_seqs
+PhysioNet EEG: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/physionet
+  ✗ Data not downloaded yet

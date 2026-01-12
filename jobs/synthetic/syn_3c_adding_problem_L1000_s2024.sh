@@ -24,19 +24,15 @@ echo "Date: $(date)"
 echo "Host: $(hostname)"
 echo "GPU: $(nvidia-smi --query-gpu=name --format=csv,noheader)"
 
-# Activate conda environment
-source ~/.bashrc
-conda activate /pscratch/sd/j/junghoon/conda-envs/qml_eeg
-
 # Navigate to project directory
-cd /pscratch/sd/j/junghoon/quantum_hydra_mamba
+cd /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba
 
 # Set environment variables
 export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:256
 export PENNYLANE_DEVICE=default.qubit
 
 # Run experiment
-python scripts/run_synthetic_benchmark.py \
+/scratch/connectome/mandy/envs/qhydra/bin/python scripts/run_synthetic_benchmark.py \
     --model-id 3c \
     --task adding_problem \
     --seq-len 1000 \

@@ -12,7 +12,7 @@ echo "  - Delta-modulated selective forgetting"
 echo "  - Unidirectional processing"
 echo ""
 
-cd /pscratch/sd/j/junghoon/quantum_hydra_mamba/jobs/ablation_eeg
+cd /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/jobs/ablation_eeg
 
 # 40Hz jobs
 echo "Submitting 40Hz jobs..."

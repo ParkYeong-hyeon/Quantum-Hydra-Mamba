@@ -27,15 +27,11 @@ echo "Sampling Freq: 160 Hz"
 echo "Seed: 2024"
 echo "Started: $(date)"
 echo "============================================"
-
-# Activate conda environment
-source activate ./conda-envs/qml_env
-
 # Navigate to project root
-cd /pscratch/sd/j/junghoon/quantum_hydra_mamba
+cd /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba
 
 # Run training (with --resume to automatically continue from checkpoint if available)
-python scripts/run_ablation_eeg.py \
+/scratch/connectome/mandy/envs/qhydra/bin/python scripts/run_ablation_eeg.py \
     --model-id 2a \
     --n-qubits 6 \
     --n-layers 2 \

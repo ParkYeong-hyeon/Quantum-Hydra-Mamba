@@ -1,0 +1,14 @@
+==========================================
+Starting dataset download job
+==========================================
+Job name: download_datasets
+Date: Mon 12 Jan 2026 05:59:56 PM KST
+Host: node4
+Working directory: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba
+==========================================
+ERROR: Python not found at /home/connectome/mandy/.conda/envs/qhydra/bin/python
+Checking alternative locations...
+  /home/connectome/mandy/.conda/envs/qhydra/bin/python: NOT FOUND
+  /usr/anaconda3/bin/python: EXISTS
+  which python: /usr/anaconda3/bin/python
+  which python3: /usr/anaconda3/bin/python3

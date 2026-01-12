@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/scripts/mandy_download_all_datasets.py", line 82, in download_synthetic_datasets
+    gen_module.generate_forrelation_datasets(data_dir, seed)
+  File "/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/scripts/generate_all_synthetic_datasets.py", line 30, in generate_forrelation_datasets
+    from data_loaders.generate_forrelation_dataset import generate_dataset as generate_forrelation_dataset
+ImportError: cannot import name 'generate_dataset' from 'generate_dataset' (unknown location)
+/scratch/connectome/mandy/miniforge/lib/python3.12/site-packages/genomic_benchmarks/utils/datasets.py:50: UserWarning: No version specified. Using version 0.
+  warnings.warn(f"No version specified. Using version {metadata['version']}.")
+Downloading file 'S001/S001R04.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S001/S001R04.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S001/S001R08.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S001/S001R08.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S001/S001R12.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S001/S001R12.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S002/S002R04.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S002/S002R04.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S002/S002R08.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S002/S002R08.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S002/S002R12.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S002/S002R12.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S003/S003R04.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S003/S003R04.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S003/S003R08.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S003/S003R08.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S003/S003R12.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S003/S003R12.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S004/S004R04.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S004/S004R04.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S004/S004R08.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S004/S004R08.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S004/S004R12.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S004/S004R12.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S005/S005R04.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S005/S005R04.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S005/S005R08.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S005/S005R08.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.
+Downloading file 'S005/S005R12.edf' from 'https://physionet.org/files/eegmmidb/1.0.0/S005/S005R12.edf' to '/scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/data/physionet/MNE-eegbci-data/files/eegmmidb/1.0.0'.

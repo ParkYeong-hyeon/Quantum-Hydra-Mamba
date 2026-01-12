@@ -8,6 +8,19 @@ Based on ABLATION_STUDY_PLAN_V3.md Section 7.3
 
 from pathlib import Path
 import os
+import sys
+
+# Add parent directory to path to import config
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from config import (
+    PROJECT_ROOT,
+    PY,
+    get_output_dir,
+    get_jobs_dir,
+    get_script_path,
+    get_slurm_config,
+)
 
 # ============================================
 # Configuration
@@ -62,24 +75,20 @@ WEIGHT_DECAY = 1e-4
 EARLY_STOPPING = 10
 SAMPLE_SIZE = 109  # All 109 subjects
 
-# Paths (using relative paths with os.path.join for safety, then converting to absolute)
-# This script is in: Quantum-Hydra-Mamba/scripts/job_generation/
-# Project root is: ../../../ e.g. /scratch/connectome/mandy/projects/quantum_hydra_mamba
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-OUTPUT_DIR = os.path.abspath(os.path.join(PROJECT_ROOT, "results", "ablation_eeg"))
-JOBS_DIR = os.path.abspath(os.path.join(PROJECT_ROOT, "jobs", "ablation_eeg"))
-CONDA_ENV = "qhydra"
-MICROMAMBA_PATH = "/home/connectome/mandy/.local/bin/micromamba"
-SCRIPT_PATH = os.path.abspath(os.path.join(PROJECT_ROOT, "Quantum-Hydra-Mamba", "scripts", "training", "run_ablation_eeg.py"))
+# Paths (from config)
+OUTPUT_DIR = get_output_dir('ablation_eeg')
+JOBS_DIR = get_jobs_dir('ablation_eeg')
+SCRIPT_PATH = get_script_path('run_ablation_eeg.py')
 
-# SLURM Configuration
-SLURM_ACCOUNT = "m4727_g"  # Updated to correct account
-SLURM_CONSTRAINT = "gpu&hbm80g"
-SLURM_QOS = "shared"
-SLURM_TIME = "24:00:00"
-SLURM_NODES = 1
-SLURM_GPUS = 1
-SLURM_CPUS = 32
+# SLURM Configuration (from config, can be overridden per experiment)
+slurm_config = get_slurm_config()
+SLURM_ACCOUNT = slurm_config['account']
+SLURM_CONSTRAINT = slurm_config['constraint']
+SLURM_QOS = slurm_config['qos']
+SLURM_TIME = slurm_config['time']
+SLURM_NODES = slurm_config['nodes']
+SLURM_GPUS = slurm_config['gpus']
+SLURM_CPUS = slurm_config['cpus_per_task']
 
 
 def create_job_script(model_id, sampling_freq, seed, job_num, total_jobs):
@@ -87,7 +96,7 @@ def create_job_script(model_id, sampling_freq, seed, job_num, total_jobs):
 
     model_name = MODEL_NAMES[model_id]
     job_name = f"abl_{model_id}_{sampling_freq}Hz_s{seed}"
-    log_file = f"{OUTPUT_DIR}/logs/{job_name}.log"
+    log_file = str(OUTPUT_DIR / "logs" / f"{job_name}.log")
 
     script = f"""#!/bin/bash
 #SBATCH --job-name={job_name}
@@ -119,15 +128,14 @@ echo "Seed: {seed}"
 echo "Started: $(date)"
 echo "============================================"
 
-# Activate micromamba environment
-eval "$({MICROMAMBA_PATH} shell hook --shell bash)"
-{MICROMAMBA_PATH} activate {CONDA_ENV}
+# Use Python directly from environment
+PYTHON_CMD="{PY}"
 
 # Navigate to project root
-cd {PROJECT_ROOT}
+cd {str(PROJECT_ROOT)}
 
 # Run training (with --resume to automatically continue from checkpoint if available)
-python {SCRIPT_PATH} \\
+$PYTHON_CMD {str(SCRIPT_PATH)} \\
     --model-id {model_id} \\
     --n-qubits {N_QUBITS} \\
     --n-layers {N_LAYERS} \\
@@ -141,7 +149,7 @@ python {SCRIPT_PATH} \\
     --sample-size {SAMPLE_SIZE} \\
     --sampling-freq {sampling_freq} \\
     --seed {seed} \\
-    --output-dir {OUTPUT_DIR} \\
+    --output-dir {str(OUTPUT_DIR)} \\
     --device cuda \\
     --resume
 
@@ -169,10 +177,10 @@ def main():
     print("=" * 80)
 
     # Create directories
-    jobs_path = Path(JOBS_DIR)
+    jobs_path = JOBS_DIR
     jobs_path.mkdir(parents=True, exist_ok=True)
 
-    logs_path = Path(OUTPUT_DIR) / "logs"
+    logs_path = OUTPUT_DIR / "logs"
     logs_path.mkdir(parents=True, exist_ok=True)
 
     # Generate job scripts
@@ -225,7 +233,7 @@ sleep 3
         submit_all += f"\n# ===== {freq} Hz Jobs =====\n"
         for model_id in MODEL_IDS:
             for seed in SEEDS:
-                job_file = f"{JOBS_DIR}/{freq}Hz/abl_{model_id}_{freq}Hz_s{seed}.sh"
+                job_file = str(JOBS_DIR / f"{freq}Hz" / f"abl_{model_id}_{freq}Hz_s{seed}.sh")
                 submit_all += f"sbatch {job_file}\n"
         submit_all += "sleep 1  # Pause between frequency batches\n"
 
@@ -252,7 +260,7 @@ echo "Submitting {n_freq_jobs} jobs for {freq} Hz..."
 """
         for model_id in MODEL_IDS:
             for seed in SEEDS:
-                job_file = f"{JOBS_DIR}/{freq}Hz/abl_{model_id}_{freq}Hz_s{seed}.sh"
+                job_file = str(JOBS_DIR / f"{freq}Hz" / f"abl_{model_id}_{freq}Hz_s{seed}.sh")
                 submit_freq += f"sbatch {job_file}\n"
 
         submit_freq += f"""
@@ -274,7 +282,7 @@ echo "Submitting {n_model_jobs} jobs for {model_id}..."
 """
         for freq in SAMPLING_FREQS:
             for seed in SEEDS:
-                job_file = f"{JOBS_DIR}/{freq}Hz/abl_{model_id}_{freq}Hz_s{seed}.sh"
+                job_file = str(JOBS_DIR / f"{freq}Hz" / f"abl_{model_id}_{freq}Hz_s{seed}.sh")
                 submit_model += f"sbatch {job_file}\n"
 
         submit_model += f"""
@@ -305,7 +313,7 @@ echo "Submitting {n_group_jobs} jobs for {group_name}..."
         for model_id in group_models:
             for freq in SAMPLING_FREQS:
                 for seed in SEEDS:
-                    job_file = f"{JOBS_DIR}/{freq}Hz/abl_{model_id}_{freq}Hz_s{seed}.sh"
+                    job_file = str(JOBS_DIR / f"{freq}Hz" / f"abl_{model_id}_{freq}Hz_s{seed}.sh")
                     submit_group += f"sbatch {job_file}\n"
 
         submit_group += f"""

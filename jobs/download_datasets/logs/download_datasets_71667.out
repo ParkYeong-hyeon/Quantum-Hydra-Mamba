@@ -1,0 +1,111 @@
+==========================================
+Starting dataset download job
+==========================================
+Job name: download_datasets
+Date: Mon 12 Jan 2026 05:56:31 PM KST
+Host: node4
+Working directory: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba
+==========================================
+Conda environment: base
+Python path: /usr/anaconda3/bin/python
+Python version: Python 3.7.4
+
+Checking data directory structure...
+Data root: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba
+Data directories:
+  synthetic: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/synthetic_benchmarks
+    ✓ Directory exists
+  dna: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/dna
+    ✓ Directory exists
+  seed: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/SEED
+    ✓ Directory exists
+  faced: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/Processed_data
+    ✓ Directory exists
+  physionet: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/physionet
+    ✓ Directory exists
+  genomic: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/genomic_benchmarks
+    ✓ Directory exists
+
+Running dataset download script...
+Command: python scripts/mandy_download_all_datasets.py 
+
+======================================================================
+  Quantum-Hydra-Mamba: Dataset Downloader
+======================================================================
+
+
+======================================================================
+  Creating Data Directories
+======================================================================
+  ✓ synthetic: data/synthetic_benchmarks
+  ✓ dna: data/dna
+  ✓ seed: SEED
+  ✓ faced: Processed_data
+  ✓ physionet: data/physionet
+  ✓ genomic: data/genomic_benchmarks
+
+
+======================================================================
+  Synthetic Benchmarks
+======================================================================
+Data directory: data/synthetic_benchmarks
+Seed: 2024
+
+  📦 Generating Forrelation datasets...
+
+============================================================
+Generating Forrelation Datasets
+============================================================
+  ❌ Error generating synthetic datasets: No module named 'torch'
+
+======================================================================
+  DNA Promoter Dataset
+======================================================================
+  ❌ Error downloading DNA dataset: No module named 'torch'
+
+======================================================================
+  Genomic Benchmarks
+======================================================================
+  ⚠️  Warning: genomic_benchmarks package not installed.
+     Install with: pip install genomic-benchmarks
+     Datasets will be downloaded on first use.
+
+======================================================================
+  PhysioNet EEG Dataset
+======================================================================
+  ⚠️  Warning: MNE package not installed.
+     Install with: pip install mne
+     Dataset will be downloaded on first use.
+
+======================================================================
+  Download Summary
+======================================================================
+  synthetic      : ❌ Failed
+  dna            : ❌ Failed
+  genomic        : ❌ Failed
+  physionet      : ❌ Failed
+
+Total time: 0.1 seconds
+
+⚠️  Some datasets failed to download.
+   They will be downloaded automatically on first use.
+
+
+==========================================
+✅ Dataset download job completed successfully!
+End time: Mon 12 Jan 2026 05:56:31 PM KST
+==========================================
+
+Verifying downloaded datasets...
+Dataset verification:
+--------------------------------------------------
+Synthetic benchmarks: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/synthetic_benchmarks
+  Forrelation: 0 files
+  Adding Problem: 0 files
+  Selective Copy: 0 files
+DNA dataset: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/dna/promoters.data
+  ✗ File does not exist
+Genomic benchmarks: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/genomic_benchmarks
+  0 datasets found
+PhysioNet EEG: /scratch/connectome/mandy/projects/data/Quantum-Hydra-Mamba/physionet
+  ✗ Data not downloaded yet

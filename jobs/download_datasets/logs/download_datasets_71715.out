@@ -1,0 +1,27 @@
+==========================================
+Starting dataset download job
+==========================================
+Job name: download_datasets
+Date: Mon 12 Jan 2026 07:19:16 PM KST
+Host: node4
+Working directory: /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba
+==========================================
+Python path: /scratch/connectome/mandy/miniforge/bin/python
+Python version: Python 3.12.12
+
+Checking data directory structure...
+
+Running dataset download script...
+Command: /scratch/connectome/mandy/miniforge/bin/python scripts/mandy_download_all_datasets.py 
+
+======================================================================
+  Quantum-Hydra-Mamba: Dataset Downloader
+======================================================================
+
+
+==========================================
+❌ Dataset download job failed with exit code: 1
+End time: Mon 12 Jan 2026 07:19:16 PM KST
+==========================================
+
+Verifying downloaded datasets...

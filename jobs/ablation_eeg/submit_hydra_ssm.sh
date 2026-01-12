@@ -20,7 +20,7 @@ echo "  - EXACT same circuit structure as QuantumSSM.py"
 echo ""
 echo "============================================"
 
-cd /pscratch/sd/j/junghoon/quantum_hydra_mamba/jobs/ablation_eeg
+cd /scratch/connectome/mandy/projects/quantum_hydra_mamba/Quantum-Hydra-Mamba/jobs/ablation_eeg
 
 # Submit Model 2d jobs
 echo ""
