@@ -1,0 +1,111 @@
+% Methods Section: Quantum Mamba and Quantum Hydra
+% For IEEE QCE Submission
+
+\section{Methods}
+\label{sec:methods}
+
+We propose two hybrid quantum-classical architectures for sequence classification: \textbf{Quantum Mamba}, a unidirectional model, and \textbf{Quantum Hydra}, its bidirectional extension.
+Both models share the same core design: a classical encoder projects temporal inputs into a latent space and partitions them into chunks, and a parameterized quantum circuit then mixes each chunk by \emph{coherently superposing} three independently evolved branch states at the amplitude level, exploiting interference effects that cannot be reproduced by classical mixtures of measurement outcomes.
+Throughout, we denote the number of qubits by $n$, the number of variational layers by $L$, the model hidden dimension by $d$, and the chunk size by $C$.
+
+% ============================================================
+\subsection{Quantum Mamba}
+\label{sec:quantum_mamba}
+
+Quantum Mamba processes a sequence $\mathbf{X} \in \mathbb{R}^{B \times T \times F}$ (batch $B$, $T$ timesteps, $F$ channels) in three stages: (i)~a classical encoder that produces chunk-level summaries, (ii)~a three-branch coherent quantum core that mixes each chunk, and (iii)~a classical aggregator and classifier.
+Fig.~\ref{fig:qmamba_architecture} shows the overall architecture.
+
+\subsubsection{Classical encoder and chunking}
+The input is first projected into the model hidden space via a linear layer followed by layer normalization, SiLU activation, and dropout:
+\begin{equation}
+    \mathbf{H} = \mathrm{Encoder}(\mathbf{X}) \in \mathbb{R}^{B \times T \times d}.
+    \label{eq:input_proj}
+\end{equation}
+To interface the variable-length sequence with the fixed-width quantum circuit, $\mathbf{H}$ is partitioned into $K = \lceil T/C \rceil$ non-overlapping chunks (zero-padding the last chunk if needed), and each chunk is summarized by a learned attention-pooled vector:
+\begin{equation}
+    \mathbf{s}^{(k)} = \sum_{t=1}^{C} \alpha_t^{(k)}\, \mathbf{h}_t^{(k)},
+    \qquad
+    \boldsymbol{\alpha}^{(k)} = \mathrm{softmax}\!\big(f_{\mathrm{attn}}(\mathbf{H}^{(k)})\big) \in \mathbb{R}^{C}.
+    \label{eq:chunk_summary}
+\end{equation}
+Each summary $\mathbf{s}^{(k)} \in \mathbb{R}^{d}$ is then transformed into a complete set of classical-to-quantum interface parameters by four linear projections: an $n$-dimensional input-angle vector
+\begin{equation}
+    \boldsymbol{\phi}^{(k)} = \pi\cdot\tanh\!\big(\mathbf{W}_{\text{enc}}\,\mathbf{s}^{(k)} + \mathbf{b}_{\text{enc}}\big) \in [-\pi, \pi]^{n},
+    \label{eq:input_angles}
+\end{equation}
+three variational parameter vectors $\boldsymbol{\theta}_{\text{fwd}}^{(k)}, \boldsymbol{\theta}_{\text{bwd}}^{(k)}, \boldsymbol{\theta}_{\text{diag}}^{(k)} \in \mathbb{R}^{5nL}$ (one per quantum branch), and a scalar Mamba-style selective gating factor
+\begin{equation}
+    \Delta^{(k)} = \sigma\!\big(f_{\Delta}(\mathbf{s}^{(k)})\big) \in [0, 1].
+    \label{eq:delta}
+\end{equation}
+
+\subsubsection{Three-branch coherent quantum core}
+\label{sec:qm_core}
+The quantum core is the central contribution of our architecture. Rather than processing each chunk through a single parameterized circuit, we evolve \emph{three independent quantum branches}---a forward branch, a backward branch, and a diagonal branch---and combine their state vectors coherently (at the amplitude level) \emph{before} measurement.
+
+Each branch begins by encoding the input angles $\boldsymbol{\phi}^{(k)}$ via single-qubit $R_Y$ rotations, $|\psi_0\rangle = \bigotimes_{i=0}^{n-1} R_Y(\phi_i^{(k)})|0\rangle$, and then applies $L$ variational layers.
+A single layer consists of arbitrary single-qubit rotations $R_X R_Y R_Z$ on each qubit followed by two controlled-$R_X$ entangling rings (one in the forward direction $i \to i{+}1$, one in the backward direction $i \to i{-}1$, both with periodic boundary), for a total of $5n$ trainable parameters per layer.
+The three branches share this ansatz structure but differ in how they use the Delta factor and in the spatial ordering of their gates:
+\begin{itemize}
+    \item \textbf{Forward branch} $|\psi_1^{(k)}\rangle$: applies $U_{\text{fwd}}(\boldsymbol{\theta}_{\text{fwd}}^{(k)}, \Delta^{(k)})$, in which every single-qubit rotation angle is multiplied by $\Delta^{(k)}$. The entangling CRX gates are left unmodulated, preserving the entanglement topology regardless of the gating level. This mirrors the input-dependent discretization of classical Mamba~\cite{gu2023mamba}: when $\Delta^{(k)} \to 0$, the branch approaches identity (the chunk is ``forgotten''); when $\Delta^{(k)} \to 1$, the full rotations are applied.
+    \item \textbf{Backward branch} $|\psi_2^{(k)}\rangle$: applies $U_{\text{bwd}}(\boldsymbol{\theta}_{\text{bwd}}^{(k)}, \Delta^{(k)})$, which uses the same Delta-modulated structure but traverses the qubit register in reverse order (rotations from qubit $n{-}1$ down to $0$, backward CRX ring before forward CRX ring). This produces an anti-causal state evolution complementary to the forward branch.
+    \item \textbf{Diagonal branch} $|\psi_3^{(k)}\rangle$: applies $U_{\text{diag}}(\boldsymbol{\theta}_{\text{diag}}^{(k)})$ using the standard (unmodulated) ansatz. This branch acts as a skip-connection-like pathway that provides a stable, Delta-independent gradient flow and captures features that do not require selective gating.
+\end{itemize}
+
+The three branch states are then combined through learnable complex coefficients $\alpha, \beta, \gamma \in \mathbb{C}$ (initialized to $1/\sqrt{3}$) and renormalized:
+\begin{equation}
+    |\psi^{(k)}\rangle = \mathcal{N}\!\left(\alpha\,|\psi_1^{(k)}\rangle + \beta\,|\psi_2^{(k)}\rangle + \gamma\,|\psi_3^{(k)}\rangle\right),
+    \label{eq:superposition}
+\end{equation}
+where $\mathcal{N}(\cdot)$ denotes normalization to unit length.
+This coherent combination is the defining operation of the core: because the branches are summed at the amplitude level \emph{before} measurement, the resulting expectation values include interference cross terms of the form $c_j^{*} c_k \langle\psi_j|\hat{O}|\psi_k\rangle$ for $j \neq k$---a genuinely quantum effect that cannot be replicated by any classical convex combination of the individual branch measurements (see Section~\ref{sec:rationale}).
+
+Finally, the combined state is measured using the full Pauli set on each qubit, yielding a $3n$-dimensional quantum feature vector:
+\begin{equation}
+    \mathbf{q}^{(k)} = \Big(\langle\sigma_X^{(i)}\rangle,\; \langle\sigma_Y^{(i)}\rangle,\; \langle\sigma_Z^{(i)}\rangle\Big)_{i=0}^{n-1} \in \mathbb{R}^{3n},
+    \label{eq:measurement}
+\end{equation}
+where all expectation values are taken with respect to $|\psi^{(k)}\rangle$.
+Measuring all three Paulis provides a tomographically richer characterization of the state than $\sigma_Z$ alone, at the cost of additional expectation-value estimation.
+
+\subsubsection{Sequence aggregation and classification}
+Each quantum feature $\mathbf{q}^{(k)}$ is projected back into the model hidden space through a linear layer with layer normalization and SiLU activation, yielding chunk-level representations $\mathbf{c}^{(k)} \in \mathbb{R}^{d}$.
+A second learned attention mechanism aggregates these chunk representations into a single sequence-level vector $\mathbf{r} \in \mathbb{R}^{d}$ (analogous to Eq.~\eqref{eq:chunk_summary} but operating over chunks instead of timesteps), which is then passed through a two-layer MLP classification head to produce the output logits.
+
+% ============================================================
+\subsection{Quantum Hydra}
+\label{sec:quantum_hydra}
+
+Quantum Hydra extends Quantum Mamba to process sequences in \emph{both} temporal directions, capturing causal and anti-causal dependencies in a manner inspired by classical bidirectional SSMs~\cite{hydra2024}.
+It shares the classical encoder, chunking, and classification stages of Quantum Mamba, but replaces the single quantum core with \emph{two} independent three-branch coherent cores: one that processes the chunk sequence in the natural temporal order ($k = 1, \ldots, K$) and one that processes it in reverse.
+Fig.~\ref{fig:qhydra_architecture} shows the overall architecture.
+
+Each direction uses its own set of branch parameter projections, so the backward core does not merely reuse the forward parameters.
+The backward pass is implemented by reversing the chunk-summary sequence, feeding it through the backward quantum core, and then re-aligning the resulting quantum features with the original temporal order.
+Crucially, the input-angle projection and Delta projection layers are \emph{shared} between the two directions, which preserves a consistent data encoding while allowing the direction-specific circuit parameters to specialize.
+
+The forward and backward quantum feature vectors for each chunk are concatenated and projected back to the hidden dimension:
+\begin{equation}
+    \mathbf{c}^{(k)} = \mathrm{OutProj}\!\Big([\,\mathbf{q}_{\rightarrow}^{(k)} \;\|\; \mathbf{q}_{\leftarrow}^{(k)}\,]\Big) \in \mathbb{R}^{d},
+    \label{eq:bidir_fusion}
+\end{equation}
+where $\|$ denotes concatenation and $\mathrm{OutProj}: \mathbb{R}^{6n} \to \mathbb{R}^{d}$ is a linear layer with layer normalization and SiLU activation.
+Sequence aggregation and classification then proceed identically to Quantum Mamba.
+
+Quantum Hydra roughly doubles both the number of quantum circuit evaluations per chunk (from 3 to 6) and the number of classical-to-quantum parameter projections (from 3 to 6), resulting in approximately $2\times$ the training time of Quantum Mamba for the same configuration.
+In exchange, it can model bidirectional temporal context within a single-layer quantum core.
+
+% ============================================================
+\subsection{Coherent combination vs.\ classical mixing}
+\label{sec:rationale}
+
+A natural classical alternative to our three-branch core would be to measure each branch separately and combine the resulting feature vectors, e.g., $\bar{\mathbf{q}} = |\alpha|^2 \mathbf{q}_1 + |\beta|^2 \mathbf{q}_2 + |\gamma|^2 \mathbf{q}_3$.
+Such a classical mixture corresponds to the incoherent density operator $\rho_{\text{mix}} = \sum_j |c_j|^2 |\psi_j\rangle\langle\psi_j|$ and retains only the diagonal terms of the combined state, discarding all inter-branch coherence.
+In contrast, the expectation value of an observable $\hat{O}$ on the coherently superposed state in Eq.~\eqref{eq:superposition} is
+\begin{equation}
+    \langle\hat{O}\rangle_{\psi} = \sum_{j} |c_j|^2\, \langle\psi_j|\hat{O}|\psi_j\rangle + \sum_{j \neq k} c_j^{*} c_k\, \langle\psi_j|\hat{O}|\psi_k\rangle,
+    \label{eq:interference}
+\end{equation}
+where $(c_1, c_2, c_3) = (\alpha, \beta, \gamma)$.
+The second sum contains the quantum interference cross terms $\langle\psi_j|\hat{O}|\psi_k\rangle$, which encode correlations between the forward, backward, and diagonal processing pathways and are genuinely inaccessible to any classical combination of the individual branch measurements.
+By training the coefficients $\alpha, \beta, \gamma$ end-to-end, our models learn to exploit these interference effects for the downstream task, which is the key mechanism we claim as the source of quantum advantage in Quantum Mamba and Quantum Hydra.

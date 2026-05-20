@@ -1,0 +1,149 @@
+% ============================================================
+% Quantum Mamba architecture diagram (TikZ)
+% Include in main document with:
+%   \usepackage{tikz}
+%   \usetikzlibrary{positioning, arrows.meta, fit, backgrounds, calc, shapes.geometric}
+%   \input{fig_quantum_mamba.tex}
+% ============================================================
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+    font=\small,
+    node distance=4mm and 6mm,
+    >=Latex,
+    classical/.style={
+        rectangle, rounded corners=2pt,
+        draw=black!70, thick,
+        fill=blue!8,
+        minimum width=28mm, minimum height=7mm,
+        align=center
+    },
+    cbranch/.style={
+        rectangle, rounded corners=2pt,
+        draw=black!70, thick,
+        fill=blue!8,
+        minimum width=22mm, minimum height=6mm,
+        align=center, font=\footnotesize
+    },
+    qbranch/.style={
+        rectangle, rounded corners=2pt,
+        draw=purple!80!black, thick,
+        fill=purple!8,
+        minimum width=32mm, minimum height=9mm,
+        align=center, font=\footnotesize
+    },
+    qcore/.style={
+        rectangle, rounded corners=2pt,
+        draw=purple!80!black, thick,
+        fill=purple!6,
+        minimum width=28mm, minimum height=7mm,
+        align=center, font=\footnotesize
+    },
+    tensor/.style={font=\footnotesize\itshape},
+    arrow/.style={-{Latex[length=2mm]}, thick},
+]
+
+% ---------- Input ----------
+\node[classical, fill=gray!10] (input) {Input sequence\\$\mathbf{X} \in \mathbb{R}^{B \times T \times F}$};
+
+% ---------- Classical encoder ----------
+\node[classical, below=of input] (encoder) {Classical encoder\\\footnotesize Linear $+$ LN $+$ SiLU};
+
+% ---------- Chunking ----------
+\node[classical, below=of encoder] (chunk) {Chunking $+$ intra-chunk attention pooling};
+\node[tensor, right=2mm of chunk] {$\{\mathbf{s}^{(k)}\}_{k=1}^{K}$};
+
+% ---------- C→Q projections ----------
+\node[classical, below=of chunk, minimum width=70mm] (proj) {%
+    Classical$\to$quantum parameter projections\\%
+    \footnotesize $\boldsymbol{\phi}^{(k)},\;\boldsymbol{\theta}_{\text{fwd}}^{(k)},\;\boldsymbol{\theta}_{\text{bwd}}^{(k)},\;\boldsymbol{\theta}_{\text{diag}}^{(k)},\;\Delta^{(k)}$
+};
+
+% ---------- Quantum core (big box) ----------
+% Title above the branches
+\node[below=6mm of proj, font=\footnotesize\bfseries, text=purple!70!black] (coretitle)
+    {Three-branch coherent quantum core};
+
+% Input encoding
+\node[qcore, below=2mm of coretitle] (enc) {%
+    $|\psi_0\rangle = \bigotimes_i R_Y(\phi_i^{(k)})|0\rangle$
+};
+
+% Three branches side by side
+\node[qbranch, below left=6mm and 6mm of enc] (fwd) {%
+    \textbf{Forward branch}\\%
+    $U_{\text{fwd}}(\boldsymbol{\theta}_{\text{fwd}}^{(k)},\Delta^{(k)})$\\%
+    $\Rightarrow |\psi_1^{(k)}\rangle$
+};
+\node[qbranch, below=6mm of enc] (bwd) {%
+    \textbf{Backward branch}\\%
+    $U_{\text{bwd}}(\boldsymbol{\theta}_{\text{bwd}}^{(k)},\Delta^{(k)})$\\%
+    $\Rightarrow |\psi_2^{(k)}\rangle$
+};
+\node[qbranch, below right=6mm and 6mm of enc] (diag) {%
+    \textbf{Diagonal branch}\\%
+    $U_{\text{diag}}(\boldsymbol{\theta}_{\text{diag}}^{(k)})$\\%
+    $\Rightarrow |\psi_3^{(k)}\rangle$
+};
+
+% Coherent superposition
+\node[qcore, below=6mm of bwd, minimum width=75mm] (super) {%
+    Coherent superposition:\; $|\psi^{(k)}\rangle = \mathcal{N}\!\left(\alpha|\psi_1^{(k)}\rangle + \beta|\psi_2^{(k)}\rangle + \gamma|\psi_3^{(k)}\rangle\right)$
+};
+
+% Measurement
+\node[qcore, below=3mm of super, minimum width=75mm] (meas) {%
+    Multi-observable measurement\; $\langle\sigma_X^{(i)}\rangle,\langle\sigma_Y^{(i)}\rangle,\langle\sigma_Z^{(i)}\rangle \Rightarrow \mathbf{q}^{(k)} \in \mathbb{R}^{3n}$
+};
+
+% Bounding box for the core
+\begin{pgfonlayer}{background}
+\node[
+    draw=purple!60!black, thick, dashed, rounded corners=3pt,
+    fill=purple!3,
+    fit=(coretitle)(enc)(fwd)(diag)(super)(meas),
+    inner sep=3mm
+] (qcoreBox) {};
+\end{pgfonlayer}
+
+% ---------- Output projection ----------
+\node[classical, below=4mm of qcoreBox] (outproj) {%
+    Output projection:\; $\mathbf{c}^{(k)} = \mathrm{Linear}(\mathbf{q}^{(k)})$
+};
+
+% ---------- Sequence aggregation ----------
+\node[classical, below=of outproj] (seqagg) {Sequence aggregation $\Rightarrow \mathbf{r} \in \mathbb{R}^{d}$};
+
+% ---------- Classifier ----------
+\node[classical, below=of seqagg, fill=green!8] (cls) {Classification head $\Rightarrow$ logits};
+
+% ---------- Arrows ----------
+\draw[arrow] (input) -- (encoder);
+\draw[arrow] (encoder) -- (chunk);
+\draw[arrow] (chunk) -- (proj);
+\draw[arrow] (proj) -- (qcoreBox.north);
+
+\draw[arrow] (enc) -- (fwd.north);
+\draw[arrow] (enc) -- (bwd);
+\draw[arrow] (enc) -- (diag.north);
+
+\draw[arrow] (fwd.south) -- ([xshift=-20mm]super.north);
+\draw[arrow] (bwd.south) -- (super.north);
+\draw[arrow] (diag.south) -- ([xshift=20mm]super.north);
+
+\draw[arrow] (super) -- (meas);
+\draw[arrow] (qcoreBox.south) -- (outproj);
+\draw[arrow] (outproj) -- (seqagg);
+\draw[arrow] (seqagg) -- (cls);
+
+\end{tikzpicture}
+\caption{%
+\textbf{Quantum Mamba architecture.}
+A classical encoder projects the input sequence $\mathbf{X}$ and partitions it into chunks, each summarized by intra-chunk attention pooling.
+For each chunk, the summary $\mathbf{s}^{(k)}$ is mapped through separate linear projections to the quantum input angles $\boldsymbol{\phi}^{(k)}$, three sets of variational parameters $\{\boldsymbol{\theta}_{\text{fwd}}^{(k)}, \boldsymbol{\theta}_{\text{bwd}}^{(k)}, \boldsymbol{\theta}_{\text{diag}}^{(k)}\}$, and a scalar selective-gating factor $\Delta^{(k)}$.
+Three independent quantum branches (forward and backward Delta-modulated, diagonal unmodulated) are evolved from the same input state $|\psi_0\rangle$ and coherently combined at the amplitude level through learnable complex coefficients $\alpha, \beta, \gamma$ before multi-observable measurement.
+The resulting chunk-level quantum feature vectors $\mathbf{q}^{(k)}$ are then projected back to the model hidden space, aggregated across chunks, and passed through a classification head.%
+}
+\label{fig:qmamba_architecture}
+\end{figure*}

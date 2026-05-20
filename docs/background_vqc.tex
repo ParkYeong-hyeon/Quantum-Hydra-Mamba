@@ -1,0 +1,47 @@
+\subsection{Variational quantum circuits}
+Variational quantum circuits (VQCs), also known as parameterized quantum circuits or quantum neural networks, are a foundational paradigm of quantum machine learning (QML) that bridges classical computational tasks and quantum computation. A VQC typically consists of three components: an encoding circuit, a parameterized ansatz circuit, and a measurement stage.
+
+The encoding circuit $U(\overrightarrow{x})$ maps a classical input vector $\overrightarrow{x}$ into a quantum state $U(\overrightarrow{x})|0\rangle^{\otimes n}$, where $|0\rangle^{\otimes n}$ is the initial ground state of an $n$-qubit system. This embedding lifts classical data into the exponentially large Hilbert space $\mathbb{C}^{2^n}$, which is the key resource for potential quantum advantage.
+
+The encoded state is then transformed by a parameterized ansatz circuit $W(\Theta)$ composed of $M$ trainable layers, producing the state
+\begin{equation}
+    |\psi(\overrightarrow{x}, \Theta)\rangle = W(\Theta)U(\overrightarrow{x})|0\rangle^{\otimes n} = \left(\prod_{j=M}^{1} V_j(\overrightarrow{\theta_j})\right)U(\overrightarrow{x})|0\rangle^{\otimes n},
+\label{QuantumState}
+\end{equation}
+where each layer $V_j(\overrightarrow{\theta_j})$ is parameterized by $\overrightarrow{\theta_j}$, and $\Theta=\{\overrightarrow{\theta_1}, \ldots, \overrightarrow{\theta_M}\}$ collects all trainable parameters. A layer typically consists of single-qubit rotation gates followed by two-qubit entangling gates, enabling the circuit to represent a rich class of quantum states.
+
+Information is extracted from the resulting state through quantum measurements of chosen observables $\hat{H}_k$. These observables are Hermitian operators ($\hat{H}_k=\hat{H}_k^\dagger$), which guarantees real-valued expectation values and is essential for interfacing with classical loss functions. The VQC thus implements a quantum parametric function
+\begin{equation}
+\overrightarrow{f}(\overrightarrow{x}; \Theta) = \left(\langle \hat{H}_1 \rangle, \ldots, \langle \hat{H}_n \rangle\right),
+\end{equation}
+whose components are given by
+\begin{equation}
+\langle \hat{H}_k \rangle = \langle 0|U^{\dagger}(\overrightarrow{x})W^{\dagger}(\Theta)\hat{H}_k W(\Theta)U(\overrightarrow{x})|0\rangle.
+\end{equation}
+In practice, these expectation values are estimated from repeated measurements (shots) on quantum hardware, or computed exactly on classical simulators.
+
+During training, the parameters $\Theta$ are iteratively updated to minimize a task-specific loss function $\mathcal{L}(\overrightarrow{x}, y; \Theta)$ over a training set $D=\{(\overrightarrow{x}_i, y_i)\}_i$. For regression, a typical choice is
+\begin{equation}
+\mathcal{L}(\overrightarrow{x}, y; \Theta) = \sum_i \| f_{\Theta}(\overrightarrow{x}_i) - y_i \|^2.
+\end{equation}
+The loss (or its gradient) is estimated from the circuit outputs and passed to a classical optimizer that solves
+\begin{equation}
+\arg\min_{\Theta}\mathcal{L}(\overrightarrow{x},y; \Theta).
+\end{equation}
+
+In many applications, it is also useful to treat the measurement observable itself as learnable. Any Hermitian operator $H$ on an $n$-qubit system can be written in the elementary-matrix basis as
+\begin{equation}
+    H = \sum_{i,j=1}^{N} h_{ij}E_{ij}, \quad h_{ij}=\overline{h_{ji}}, \quad N=2^n,
+\end{equation}
+where $E_{ij}$ has a single nonzero entry at position $(i,j)$, i.e., $(E_{ij})_{kl}=\delta_{ik}\delta_{jl}$. Parameterizing $H$ by the coefficients $\overrightarrow{h}$, the expectation value with respect to the state in Eq.~\eqref{QuantumState} becomes linear in $\overrightarrow{h}$:
+\begin{equation}
+    \langle\psi|H(\overrightarrow{h})|\psi\rangle = \sum_{i,j=1}^{N}h_{ij}\langle\psi|E_{ij}|\psi\rangle.
+\end{equation}
+Its gradient with respect to each coefficient takes the particularly clean form
+\begin{align}
+    \frac{\partial \langle\psi|H(\overrightarrow{h})|\psi\rangle}{\partial h_{kl}} &= \langle\psi|E_{kl}|\psi\rangle \nonumber \\
+    &= \left(\overline{W(\Theta)U(\overrightarrow{x})}\right)_{k1}\left(W(\Theta)U(\overrightarrow{x})\right)_{l1},
+\end{align}
+which makes the joint dependence on the parameterized circuit $W(\Theta)$ and the encoded data $U(\overrightarrow{x})$ explicit.
+
+In summary, VQCs provide a flexible, end-to-end differentiable framework that leverages quantum phenomena such as superposition and entanglement, and can be seamlessly embedded as differentiable modules within larger classical deep learning pipelines.

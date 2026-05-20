@@ -1,0 +1,128 @@
+% ============================================================
+% Quantum Hydra architecture diagram (TikZ)
+% Include in main document with:
+%   \usepackage{tikz}
+%   \usepackage{graphicx}  % for \scalebox
+%   \usetikzlibrary{positioning, arrows.meta, fit, backgrounds, calc, shapes.geometric}
+%   \input{fig_quantum_hydra.tex}
+% ============================================================
+
+\begin{figure*}[t]
+\centering
+\scalebox{0.85}{%
+\begin{tikzpicture}[
+    font=\small,
+    node distance=4mm and 6mm,
+    >=Latex,
+    classical/.style={
+        rectangle, rounded corners=2pt,
+        draw=black!70, thick,
+        fill=blue!8,
+        minimum width=28mm, minimum height=7mm,
+        align=center
+    },
+    qcore/.style={
+        rectangle, rounded corners=3pt,
+        draw=purple!80!black, thick,
+        fill=purple!6,
+        minimum width=62mm, minimum height=30mm,
+        align=center, font=\footnotesize
+    },
+    fusion/.style={
+        rectangle, rounded corners=2pt,
+        draw=purple!80!black, thick,
+        fill=purple!10,
+        minimum width=96mm, minimum height=12mm,
+        align=center, font=\fontsize{9.6pt}{11.5pt}\selectfont
+    },
+    tensor/.style={font=\footnotesize\itshape},
+    arrow/.style={-{Latex[length=2mm]}, thick},
+]
+
+% ---------- Input ----------
+\node[classical, fill=gray!10] (input) {Input sequence\\$\mathbf{X} \in \mathbb{R}^{B \times T \times F}$};
+
+% ---------- Classical encoder ----------
+\node[classical, below=of input] (encoder) {Classical encoder\\\footnotesize Linear $+$ LN $+$ SiLU};
+
+% ---------- Chunking ----------
+\node[classical, below=of encoder] (chunk) {Chunking $+$ intra-chunk attention pooling};
+\node[tensor, right=2mm of chunk] {$\{\mathbf{s}^{(k)}\}_{k=1}^{K}$};
+
+% ---------- Shared projections (angles + Delta) ----------
+\node[classical, below=of chunk, minimum width=70mm, fill=blue!12] (shared) {%
+    Shared projections\;\; $\boldsymbol{\phi}^{(k)},\;\Delta^{(k)}$
+};
+
+% ---------- Direction-specific projections ----------
+\node[classical, below left=8mm and 8mm of shared, minimum width=40mm] (fwdproj) {%
+    Forward-direction params\\%
+    \footnotesize $\boldsymbol{\theta}_{\text{fwd,fwd}}^{(k)},\boldsymbol{\theta}_{\text{fwd,bwd}}^{(k)},\boldsymbol{\theta}_{\text{fwd,diag}}^{(k)}$
+};
+\node[classical, below right=8mm and 8mm of shared, minimum width=40mm] (bwdproj) {%
+    Backward-direction params\\%
+    \footnotesize $\boldsymbol{\theta}_{\text{bwd,fwd}}^{(k)},\boldsymbol{\theta}_{\text{bwd,bwd}}^{(k)},\boldsymbol{\theta}_{\text{bwd,diag}}^{(k)}$
+};
+
+% ---------- Two quantum cores (direction labels placed INSIDE) ----------
+\node[qcore, below=8mm of fwdproj] (coreF) {%
+    \textcolor{purple!70!black}{{\fontsize{9.6pt}{11.5pt}\selectfont\textit{Chunks in natural order $(k=1,\dots,K)$}}}\\[1mm]%
+    \textbf{Forward QCore}\\[0.5mm]%
+    $|\psi_0\rangle \to \{|\psi_1\rangle,|\psi_2\rangle,|\psi_3\rangle\}$\\[0.3mm]%
+    $\downarrow$\; coherent superposition $\Rightarrow |\psi_{\rightarrow}^{(k)}\rangle$\\[0.3mm]%
+    $\downarrow$\; multi-observable measurement\\[0.3mm]%
+    $\mathbf{q}_{\rightarrow}^{(k)} \in \mathbb{R}^{3n}$
+};
+
+\node[qcore, below=8mm of bwdproj] (coreB) {%
+    \textcolor{purple!70!black}{{\fontsize{9.6pt}{11.5pt}\selectfont\textit{Chunks reversed $(K,\dots,1)$}}}\\[1mm]%
+    \textbf{Backward QCore}\\[0.5mm]%
+    $|\psi_0\rangle \to \{|\psi_1\rangle,|\psi_2\rangle,|\psi_3\rangle\}$\\[0.3mm]%
+    $\downarrow$\; coherent superposition $\Rightarrow |\psi_{\leftarrow}^{(k)}\rangle$\\[0.3mm]%
+    $\downarrow$\; multi-observable measurement\\[0.3mm]%
+    $\mathbf{q}_{\leftarrow}^{(k)} \in \mathbb{R}^{3n}$
+};
+
+% ---------- Temporal re-alignment + concat (positioned via explicit coordinate) ----------
+\node[fusion] (fuse) at ($(coreF.south)!0.5!(coreB.south) + (0,-14mm)$) {%
+    Temporal re-alignment $+$ concatenation:\;
+    $\mathbf{c}^{(k)} = \mathrm{OutProj}\!\left([\mathbf{q}_{\rightarrow}^{(k)} \,\|\, \mathbf{q}_{\leftarrow}^{(k)}]\right) \in \mathbb{R}^{d}$
+};
+
+% ---------- Sequence aggregation ----------
+\node[classical, below=of fuse] (seqagg) {Sequence aggregation $\Rightarrow \mathbf{r} \in \mathbb{R}^{d}$};
+
+% ---------- Classifier ----------
+\node[classical, below=of seqagg, fill=green!8] (cls) {Classification head $\Rightarrow$ logits};
+
+% ---------- Arrows ----------
+\draw[arrow] (input) -- (encoder);
+\draw[arrow] (encoder) -- (chunk);
+\draw[arrow] (chunk) -- (shared);
+
+% Shared projections feed both cores
+\draw[arrow] (shared.south) -- ++(0,-2mm) -| (fwdproj.north);
+\draw[arrow] (shared.south) -- ++(0,-2mm) -| (bwdproj.north);
+
+\draw[arrow] (fwdproj) -- (coreF);
+\draw[arrow] (bwdproj) -- (coreB);
+
+% Clean diagonal arrows from cores to fuse box (no overlapping L-bends)
+\draw[arrow] (coreF.south) -- ([xshift=-20mm]fuse.north);
+\draw[arrow] (coreB.south) -- ([xshift=20mm]fuse.north);
+
+\draw[arrow] (fuse) -- (seqagg);
+\draw[arrow] (seqagg) -- (cls);
+
+\end{tikzpicture}%
+}
+\caption{%
+\textbf{Quantum Hydra architecture.}
+Quantum Hydra extends Quantum Mamba to process sequences in \emph{both} temporal directions.
+The classical encoder, chunking, and shared projections for the input angles $\boldsymbol{\phi}^{(k)}$ and selective-gating factor $\Delta^{(k)}$ are identical to Quantum Mamba.
+Two independent three-branch coherent quantum cores are used in parallel: the \emph{forward core} processes the chunk-summary sequence in its natural temporal order, while the \emph{backward core} processes the reversed sequence with its own dedicated set of variational parameter projections.
+The resulting chunk-level feature vectors are re-aligned in time, concatenated, and projected back to the model hidden space before sequence aggregation and classification.
+This design captures both causal and anti-causal temporal dependencies at the cost of roughly $2\times$ the quantum circuit evaluations per chunk compared to Quantum Mamba.%
+}
+\label{fig:qhydra_architecture}
+\end{figure*}

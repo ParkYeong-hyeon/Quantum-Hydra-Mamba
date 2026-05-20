@@ -1,0 +1,86 @@
+% Experiments Section
+% For IEEE QCE Submission
+
+\section{Experiments}
+\label{sec:experiments}
+
+We evaluate Quantum Mamba and Quantum Hydra on two complementary domains: biomedical time-series classification using two EEG datasets, and natural language understanding using two tasks from the GLUE benchmark.
+This pairing tests the same architecture on data with very different statistical properties (continuous multi-channel physiological signals vs.\ discrete tokenized text) and time scales, providing a broad assessment of the proposed models.
+
+% ============================================================
+\subsection{EEG datasets}
+\label{sec:eeg_datasets}
+
+\subsubsection{PhysioNet Motor Imagery}
+\label{sec:physionet}
+
+The PhysioNet EEG Motor Movement/Imagery Database~\cite{schalk2004bci2000,goldberger2000physiobank} is a widely used benchmark for brain--computer interface research. It contains EEG recordings from 109 healthy subjects performing motor imagery tasks, acquired with a 64-channel BCI2000 system at 160\,Hz.
+Following standard practice, we use the three runs (runs 4, 8, and 12) in which subjects imagine opening and closing either the \emph{left} or \emph{right} fist, yielding a binary classification task over 64 EEG channels.
+
+\paragraph{Preprocessing.}
+Raw EDF recordings are loaded via MNE-Python~\cite{gramfort2013meg}, resampled to a target frequency $f_s \in \{40, 80, 160\}$\,Hz, and epoched to the interval $[1.0, 4.1]$\,s relative to each cue, producing trials of length $T = \lceil 3.1 f_s \rceil$ samples (e.g., $T = 248$ at 80\,Hz).
+Signal amplitudes are scaled to millivolts for numerical stability.
+Each trial is labeled as left-hand (class 0) or right-hand (class 1) motor imagery.
+
+\paragraph{Splits.}
+To assess cross-subject generalization, we perform a \emph{subject-level} stratified split: 70\% of subjects are assigned to the training set, 15\% to validation, and 15\% to test, ensuring no subject appears in more than one split.
+We report the mean and standard deviation of test accuracy across three independent splits using seeds $\{2024, 2025, 2026\}$.
+
+\paragraph{Sampling-frequency ablation.}
+We train and evaluate each model at $f_s = 40$, $80$, and $160$\,Hz in order to study how quantum advantage scales with temporal resolution and sequence length.
+This yields three sequence lengths ($T = 124, 248, 496$) with identical content but different quantum circuit context windows, allowing us to isolate the effect of sequence length from confounding factors.
+
+\subsubsection{ADFTD Dementia EEG}
+\label{sec:adftd}
+
+The ADFTD dataset~\cite{miltiadous2023dataset}\footnote{OpenNeuro accession ds004504.} is a publicly available resting-state, eyes-closed EEG corpus collected at the 2nd Department of Neurology of AHEPA General Hospital (Thessaloniki, Greece) for the study of dementia.
+It contains recordings from 88 subjects: 36 with Alzheimer's disease (AD), 23 with frontotemporal dementia (FTD), and 29 healthy controls (CN).
+Data were acquired with a Nihon Kohden EEG 2100 clinical device using 19 scalp electrodes placed according to the international 10--20 system (Fp1, Fp2, F3, F4, C3, C4, P3, P4, O1, O2, F7, F8, T3, T4, T5, T6, Fz, Cz, Pz) at a sampling rate of 500\,Hz.
+Recording duration varied from 5 to 21 minutes per subject.
+We use the pre-processed \texttt{derivatives/} version released with the dataset, which has already been (i)~band-pass filtered (0.5--45\,Hz, Butterworth), (ii)~re-referenced to A1--A2, (iii)~artifact-corrected using the Artifact Subspace Reconstruction (ASR) algorithm, and (iv)~cleaned with ICA-based removal of eye and jaw components via ICLabel.
+
+\paragraph{Preprocessing.}
+For each subject, we load the .set file using MNE-Python and convert the signal to microvolts.
+The continuous recording is then partitioned into non-overlapping fixed-length segments of 2{,}500 samples (5\,seconds at 500\,Hz).
+This segmentation yields a consistent trial length across subjects and provides enough per-subject data for batch-level training.
+We apply per-channel z-score normalization using statistics computed only from the training set, and clip values to $\pm 10\sigma$ to suppress residual outliers.
+Each segment inherits the diagnostic label of its source subject.
+
+\paragraph{Task setup and splits.}
+We consider the three-class classification task (AD vs.\ FTD vs.\ CN) over the 19-channel $\times$ 2{,}500-sample trials.
+As with PhysioNet, we use a \emph{subject-level} stratified split (70\% train / 15\% val / 15\% test) to prevent leakage of subject-specific features between splits, and we stratify by diagnostic group so that the class distribution is preserved across splits.
+Results are averaged over three seeds.
+
+% ============================================================
+\subsection{GLUE benchmark}
+\label{sec:glue}
+
+The General Language Understanding Evaluation (GLUE) benchmark~\cite{wang2018glue} is a standard suite of nine English-language natural language understanding tasks used to evaluate the transferability and robustness of sentence-level models.
+From this suite, we select two contrasting tasks---SST-2 and RTE---that together stress both abundant-data single-sentence modeling and data-scarce sentence-pair reasoning.
+
+\subsubsection{SST-2: Stanford Sentiment Treebank (binary)}
+\label{sec:sst2}
+
+SST-2~\cite{socher2013sst} is a binary sentiment classification task built from movie reviews from Rotten Tomatoes.
+Each example is a single sentence labeled as either \emph{positive} or \emph{negative}.
+The GLUE release provides approximately 67{,}000 training examples and 872 validation examples, making it by far the largest of the two GLUE tasks we consider and a natural testbed for the models' raw classification capacity.
+
+\subsubsection{RTE: Recognizing Textual Entailment (binary)}
+\label{sec:rte}
+
+RTE~\cite{dagan2005pascal,bentivogli2009fifth} is a sentence-pair entailment task aggregated from a series of textual entailment challenges.
+Each example consists of a \emph{premise} and a \emph{hypothesis}, and the model must predict whether the premise \emph{entails} the hypothesis (label 0) or not (label 1).
+The GLUE release provides only 2{,}490 training examples and 277 validation examples, making RTE a data-scarce, low-resource regime that probes generalization from limited supervision---a setting in which inductive biases of the model architecture become especially important.
+
+\subsubsection{Preprocessing and model interface}
+\label{sec:glue_preproc}
+
+Both tasks are loaded directly from the HuggingFace \texttt{datasets} library.
+Inputs are tokenized with the pre-trained \texttt{bert-base-uncased} WordPiece tokenizer~\cite{devlin2019bert}: SST-2 sentences are passed as single-segment inputs, while RTE premise--hypothesis pairs are joined using the standard \texttt{[CLS]\,premise\,[SEP]\,hypothesis\,[SEP]} format.
+All sequences are padded or truncated to a fixed length of $T = 128$ tokens, with an attention mask tracking valid positions.
+Token IDs are then passed through a trainable embedding layer of dimension $d$ to produce a continuous sequence $\mathbf{X} \in \mathbb{R}^{B \times 128 \times d}$, which serves as the input to Quantum Mamba or Quantum Hydra in place of the raw feature matrix used for EEG (Eq.~\eqref{eq:input_proj}).
+In this setting, the ``channel'' dimension $F$ of our models corresponds to the token embedding dimension, and the chunked temporal processing of Section~\ref{sec:qm_core} operates over token positions instead of time steps.
+
+\paragraph{Labels and metrics.}
+Both SST-2 and RTE are binary classification tasks with a single \texttt{label} field; we train with standard cross-entropy loss and report accuracy on the GLUE development set, following the common GLUE evaluation protocol since test-set labels are hidden behind an online submission server.
+As with the EEG experiments, results are averaged over three random seeds.

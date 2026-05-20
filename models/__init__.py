@@ -143,6 +143,16 @@ from models.QuantumSSM import (
 )
 
 # ============================================
+# QSVT+LCU SSM Models (True Quantum Mixing)
+# Classical Features -> QSVT+LCU Quantum Mixing
+# ============================================
+from models.QuantumQSVTSSM import (
+    QSVTLCUCore,
+    QuantumQSVTMambaSSM,
+    QuantumQSVTHydraSSM,
+)
+
+# ============================================
 # End-to-End Quantum Models
 # (Quantum Features -> Quantum Mixing -> Single Measurement)
 # NO intermediate measurements - true quantum coherence
@@ -232,6 +242,13 @@ __all__ = [
     # ============================================
     'QuantumMambaSSM',
     'QuantumHydraSSM',
+
+    # ============================================
+    # QSVT+LCU SSM Models (True Quantum Mixing)
+    # ============================================
+    'QSVTLCUCore',
+    'QuantumQSVTMambaSSM',
+    'QuantumQSVTHydraSSM',
 
     # ============================================
     # End-to-End Quantum Models (Quantum -> Quantum)

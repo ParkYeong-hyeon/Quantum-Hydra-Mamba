@@ -70,6 +70,9 @@ MODEL_REGISTRY = {
     # NEW: True Superposition + Delta Recurrence (proposed hybrid)
     '2d': {'name': 'QuantumMambaHydraSSM', 'group': 2, 'feat': 'classical', 'mix': 'quantum_superposition', 'type': 'mamba'},
     '2e': {'name': 'QuantumHydraHydraSSM', 'group': 2, 'feat': 'classical', 'mix': 'quantum_superposition', 'type': 'hydra'},
+    # NEW: QSVT+LCU SSM (true quantum cross-timestep mixing)
+    '2h': {'name': 'QuantumQSVTMambaSSM', 'group': 2, 'feat': 'classical', 'mix': 'quantum_qsvt_lcu', 'type': 'mamba'},
+    '2i': {'name': 'QuantumQSVTHydraSSM', 'group': 2, 'feat': 'classical', 'mix': 'quantum_qsvt_lcu', 'type': 'hydra'},
 
     # Group 3: Classical Features → Classical Mixing (Baseline)
     '3a': {'name': 'ClassicalTransformer', 'group': 3, 'feat': 'classical', 'mix': 'classical', 'type': 'transformer'},
@@ -298,6 +301,37 @@ def create_model(model_id, n_channels, n_timesteps, n_qubits, n_layers,
             output_dim=output_dim,
             dropout=dropout,
             device=device_str
+        )
+
+    # NEW: 2h and 2i - QSVT+LCU SSM (true quantum cross-timestep mixing)
+    elif model_id == '2h':
+        from models.QuantumQSVTSSM import QuantumQSVTMambaSSM
+        model = QuantumQSVTMambaSSM(
+            n_qubits=n_qubits,
+            n_timesteps=n_timesteps,
+            qlcu_layers=n_layers,
+            feature_dim=n_channels,
+            d_model=d_model,
+            d_state=d_state,
+            output_dim=output_dim,
+            dropout=dropout,
+            device=device_str,
+            degree=2,
+        )
+
+    elif model_id == '2i':
+        from models.QuantumQSVTSSM import QuantumQSVTHydraSSM
+        model = QuantumQSVTHydraSSM(
+            n_qubits=n_qubits,
+            n_timesteps=n_timesteps,
+            qlcu_layers=n_layers,
+            feature_dim=n_channels,
+            d_model=d_model,
+            d_state=d_state,
+            output_dim=output_dim,
+            dropout=dropout,
+            device=device_str,
+            degree=2,
         )
 
     # ========================================
@@ -809,9 +843,9 @@ Examples:
 
     # Model selection
     parser.add_argument("--model-id", type=str, required=True,
-                        choices=['1a', '1b', '1c', '2a', '2b', '2c', '2d', '2e',
+                        choices=['1a', '1b', '1c', '2a', '2b', '2c', '2d', '2e', '2h', '2i',
                                  '3a', '3b', '3c', '4a', '4b', '4c', '4d', '4e'],
-                        help="Model ID (1a-4e, including 2d/2e and 4d/4e for superposition models)")
+                        help="Model ID (1a-4e, including 2d/2e superposition, 2h/2i QSVT+LCU, 4d/4e E2E superposition)")
 
     # Quantum hyperparameters
     parser.add_argument("--n-qubits", type=int, default=6,

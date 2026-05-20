@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 Synthetic Benchmark Runner for Long-Range Sequence Learning
 Supports Forrelation, Adding Problem, and Selective Copy tasks
 
 Models tested (12 selected models):
-  Group 1 (Quantum Features → Classical Mixing):
+  Group 1 (Quantum Features -> Classical Mixing):
     1a: QuantumTransformer, 1b: QuantumMambaSSM, 1c: QuantumHydraSSM
 
-  Group 2 (Classical Features → Quantum Mixing):
+  Group 2 (Classical Features -> Quantum Mixing):
     2a: ClassicalQuantumAttention
     2d: QuantumMambaHydraSSM (True Superposition), 2e: QuantumHydraHydraSSM (True Superposition)
 
-  Group 3 (Classical Features → Classical Mixing - Baseline):
+  Group 3 (Classical Features -> Classical Mixing - Baseline):
     3a: ClassicalTransformer, 3b: TrueClassicalMamba, 3c: TrueClassicalHydra
 
-  Group 4 (Quantum Features → Quantum Mixing - E2E):
+  Group 4 (Quantum Features -> Quantum Mixing - E2E):
     4a: QuantumTransformerE2E
     4d: QuantumMambaE2E_Superposition, 4e: QuantumHydraE2E_Superposition
 
@@ -70,22 +71,25 @@ def convert_to_serializable(obj):
 # Model ID to Class Mapping
 # ============================================
 MODEL_REGISTRY = {
-    # Group 1: Quantum Features → Classical Mixing
+    # Group 1: Quantum Features -> Classical Mixing
     '1a': {'name': 'QuantumTransformer', 'group': 1, 'feat': 'quantum', 'mix': 'classical', 'type': 'transformer'},
     '1b': {'name': 'QuantumMambaSSM', 'group': 1, 'feat': 'quantum', 'mix': 'classical', 'type': 'mamba'},
     '1c': {'name': 'QuantumHydraSSM', 'group': 1, 'feat': 'quantum', 'mix': 'classical', 'type': 'hydra'},
 
-    # Group 2: Classical Features → Quantum Mixing
+    # Group 2: Classical Features -> Quantum Mixing
     '2a': {'name': 'ClassicalQuantumAttention', 'group': 2, 'feat': 'classical', 'mix': 'quantum', 'type': 'transformer'},
     '2d': {'name': 'QuantumMambaHydraSSM', 'group': 2, 'feat': 'classical', 'mix': 'quantum_superposition', 'type': 'mamba'},
     '2e': {'name': 'QuantumHydraHydraSSM', 'group': 2, 'feat': 'classical', 'mix': 'quantum_superposition', 'type': 'hydra'},
+    # NEW: QSVT+LCU SSM (true quantum cross-timestep mixing)
+    '2h': {'name': 'QuantumQSVTMambaSSM', 'group': 2, 'feat': 'classical', 'mix': 'quantum_qsvt_lcu', 'type': 'mamba'},
+    '2i': {'name': 'QuantumQSVTHydraSSM', 'group': 2, 'feat': 'classical', 'mix': 'quantum_qsvt_lcu', 'type': 'hydra'},
 
-    # Group 3: Classical Features → Classical Mixing (Baseline)
+    # Group 3: Classical Features -> Classical Mixing (Baseline)
     '3a': {'name': 'ClassicalTransformer', 'group': 3, 'feat': 'classical', 'mix': 'classical', 'type': 'transformer'},
     '3b': {'name': 'TrueClassicalMamba', 'group': 3, 'feat': 'classical', 'mix': 'classical', 'type': 'mamba'},
     '3c': {'name': 'TrueClassicalHydra', 'group': 3, 'feat': 'classical', 'mix': 'classical', 'type': 'hydra'},
 
-    # Group 4: Quantum Features → Quantum Mixing (E2E)
+    # Group 4: Quantum Features -> Quantum Mixing (E2E)
     '4a': {'name': 'QuantumTransformerE2E', 'group': 4, 'feat': 'quantum', 'mix': 'quantum', 'type': 'transformer'},
     '4d': {'name': 'QuantumMambaE2ESuperposition', 'group': 4, 'feat': 'quantum_superposition', 'mix': 'quantum_superposition', 'type': 'mamba'},
     '4e': {'name': 'QuantumHydraE2ESuperposition', 'group': 4, 'feat': 'quantum_superposition', 'mix': 'quantum_superposition', 'type': 'hydra'},
@@ -110,7 +114,26 @@ TASK_CONFIGS = {
         'output_dim': 8,  # num_markers
         'metric': 'mse',
         'baseline': 0.083,
-    }
+    },
+    # New tasks designed for quantum models (no discrete gating requirement)
+    'continuous_selective_copy': {
+        'type': 'regression_multidim',
+        'output_dim': 64,  # num_markers * signal_dim (8 * 8)
+        'metric': 'mse',
+        'baseline': 0.125,  # Predict zeros baseline
+    },
+    'frequency_copying': {
+        'type': 'classification',
+        'n_classes': 5,
+        'metric': 'accuracy',
+        'baseline': 0.2,  # 1/5 random chance
+    },
+    'frequency_reproduction': {
+        'type': 'regression',
+        'output_dim': 100,  # decode_len
+        'metric': 'mse',
+        'baseline': 0.5,
+    },
 }
 
 
@@ -265,6 +288,86 @@ def load_data(task, seq_len, batch_size, num_markers=8, seed=2024, data_dir="./d
         n_channels = params['num_channels']
         output_dim = num_markers  # multi-output regression
 
+    elif task == 'continuous_selective_copy':
+        # New task: Continuous Selective Copy (for quantum models - no discrete gating)
+        from data_loaders.continuous_selective_copy_dataloader import get_continuous_selective_copy_dataloader
+
+        # Default: L200_M8_D8_uniform (balanced configuration)
+        dataset_path = data_dir / "continuous_selective_copy" / f"cont_sel_copy_L{seq_len}_M{num_markers}_D8_uniform_seed{seed}.pt"
+
+        if not dataset_path.exists():
+            print(f"Dataset not found at {dataset_path}. Generating...")
+            dataset_path.parent.mkdir(parents=True, exist_ok=True)
+            from data_loaders.generate_continuous_selective_copy import generate_continuous_selective_copy_dataset
+            generate_continuous_selective_copy_dataset(
+                num_samples=5000,
+                seq_len=seq_len,
+                num_markers=num_markers,
+                signal_dim=8,
+                marker_strategy="uniform",
+                filename=str(dataset_path),
+                seed=seed
+            )
+
+        train_loader, val_loader, test_loader, params = get_continuous_selective_copy_dataloader(
+            dataset_path=str(dataset_path),
+            batch_size=batch_size,
+            train_ratio=0.8,
+            val_ratio=0.1,
+            seed=seed,
+            flatten_target=True  # Flatten for model compatibility
+        )
+        n_channels = params['num_channels']  # signal_dim + 1
+        output_dim = num_markers * params['signal_dim']  # Flattened output
+
+    elif task in ['frequency_copying', 'frequency_reproduction']:
+        # New task: Frequency Copying (for quantum models - oscillation detection)
+        from data_loaders.frequency_copying_dataloader import get_frequency_copying_dataloader
+
+        # Parse sequence length as encode + delay + decode
+        # Default: E100_D100_Dec100 (total 300), 5 classes, noise distractor
+        delay_len = seq_len  # Use seq_len as delay length
+        encode_len = 100
+        decode_len = 100
+        num_classes = 5
+
+        total_len = encode_len + delay_len + decode_len
+        dataset_path = data_dir / "frequency_copying" / f"freq_copy_E{encode_len}_D{delay_len}_Dec{decode_len}_C{num_classes}_noise_seed{seed}.pt"
+
+        if not dataset_path.exists():
+            print(f"Dataset not found at {dataset_path}. Generating...")
+            dataset_path.parent.mkdir(parents=True, exist_ok=True)
+            import numpy as np
+            from data_loaders.generate_frequency_copying import generate_frequency_copying_dataset
+            frequency_classes = np.linspace(2.0, 12.0, num_classes).tolist()
+            generate_frequency_copying_dataset(
+                num_samples=5000,
+                seq_len=total_len,
+                encode_len=encode_len,
+                delay_len=delay_len,
+                decode_len=decode_len,
+                frequency_classes=frequency_classes,
+                distractor_mode="noise",
+                filename=str(dataset_path),
+                seed=seed
+            )
+
+        task_mode = "classification" if task == "frequency_copying" else "reproduction"
+        train_loader, val_loader, test_loader, params = get_frequency_copying_dataloader(
+            dataset_path=str(dataset_path),
+            batch_size=batch_size,
+            train_ratio=0.8,
+            val_ratio=0.1,
+            seed=seed,
+            task_mode=task_mode
+        )
+        n_channels = 2  # [signal, phase_indicator]
+        seq_len = total_len  # Update seq_len to actual sequence length
+        if task == "frequency_copying":
+            output_dim = num_classes  # Classification
+        else:
+            output_dim = decode_len  # Reproduction
+
     else:
         raise ValueError(f"Unknown task: {task}")
 
@@ -281,12 +384,12 @@ def create_model(model_id, n_channels, n_timesteps, n_qubits, n_layers,
     model_name = model_info['name']
 
     print(f"Creating model: {model_name} (ID: {model_id})")
-    print(f"  Group {model_info['group']}: {model_info['feat']} features → {model_info['mix']} mixing ({model_info['type']})")
+    print(f"  Group {model_info['group']}: {model_info['feat']} features -> {model_info['mix']} mixing ({model_info['type']})")
 
     device_str = str(device) if hasattr(device, '__str__') else device
 
     # ========================================
-    # Group 1: Quantum Features → Classical Mixing
+    # Group 1: Quantum Features -> Classical Mixing
     # ========================================
     if model_id == '1a':
         from models.QuantumTransformer import QuantumTransformer
@@ -334,7 +437,7 @@ def create_model(model_id, n_channels, n_timesteps, n_qubits, n_layers,
         )
 
     # ========================================
-    # Group 2: Classical Features → Quantum Mixing
+    # Group 2: Classical Features -> Quantum Mixing
     # ========================================
     elif model_id == '2a':
         from models.QuantumMixingSSM import ClassicalQuantumAttention
@@ -379,8 +482,39 @@ def create_model(model_id, n_channels, n_timesteps, n_qubits, n_layers,
             device=device_str
         )
 
+    # NEW: 2h and 2i - QSVT+LCU SSM (true quantum cross-timestep mixing)
+    elif model_id == '2h':
+        from models.QuantumQSVTSSM import QuantumQSVTMambaSSM
+        model = QuantumQSVTMambaSSM(
+            n_qubits=n_qubits,
+            n_timesteps=n_timesteps,
+            qlcu_layers=n_layers,
+            feature_dim=n_channels,
+            d_model=d_model,
+            d_state=d_state,
+            output_dim=output_dim,
+            dropout=dropout,
+            device=device_str,
+            degree=2,
+        )
+
+    elif model_id == '2i':
+        from models.QuantumQSVTSSM import QuantumQSVTHydraSSM
+        model = QuantumQSVTHydraSSM(
+            n_qubits=n_qubits,
+            n_timesteps=n_timesteps,
+            qlcu_layers=n_layers,
+            feature_dim=n_channels,
+            d_model=d_model,
+            d_state=d_state,
+            output_dim=output_dim,
+            dropout=dropout,
+            device=device_str,
+            degree=2,
+        )
+
     # ========================================
-    # Group 3: Classical Features → Classical Mixing (Baselines)
+    # Group 3: Classical Features -> Classical Mixing (Baselines)
     # ========================================
     elif model_id == '3a':
         from models.ClassicalTransformer import ClassicalTransformer
@@ -423,7 +557,7 @@ def create_model(model_id, n_channels, n_timesteps, n_qubits, n_layers,
         )
 
     # ========================================
-    # Group 4: Quantum Features → Quantum Mixing (E2E)
+    # Group 4: Quantum Features -> Quantum Mixing (E2E)
     # ========================================
     elif model_id == '4a':
         from models.QuantumE2E import QuantumTransformerE2E
@@ -670,7 +804,7 @@ def train_model(
     print(f"SYNTHETIC BENCHMARK - {task.upper()}")
     print("=" * 80)
     print(f"Model ID: {model_id} ({model_name})")
-    print(f"  Group {model_info['group']}: {model_info['feat']} feat → {model_info['mix']} mix ({model_info['type']})")
+    print(f"  Group {model_info['group']}: {model_info['feat']} feat -> {model_info['mix']} mix ({model_info['type']})")
     print(f"Task: {task} ({task_config['type']})")
     print(f"Sequence Length: {seq_len}")
     print(f"Seed: {seed}")
@@ -975,23 +1109,30 @@ Models (12 selected):
 Tasks:
   forrelation: Classification - detect quantum correlations
   adding_problem: Regression - sum of two marked values
-  selective_copy: Multi-output regression - output marked tokens
+  selective_copy: Multi-output regression - output marked tokens (DISCRETE - quantum models struggle)
+  continuous_selective_copy: Regression - continuous memory task (quantum-friendly, no discrete gating)
+  frequency_copying: Classification - detect oscillation frequency (quantum-friendly, periodic ops)
+  frequency_reproduction: Regression - reproduce oscillation waveform (quantum-friendly)
 
 Examples:
   python run_synthetic_benchmark.py --model-id 1c --task forrelation --seq-len 200 --seed 2024
   python run_synthetic_benchmark.py --model-id 2e --task adding_problem --seq-len 500 --seed 2025
   python run_synthetic_benchmark.py --model-id 3b --task selective_copy --seq-len 1000 --seed 2026
+  python run_synthetic_benchmark.py --model-id 2d --task continuous_selective_copy --seq-len 200 --seed 2024
+  python run_synthetic_benchmark.py --model-id 1b --task frequency_copying --seq-len 100 --seed 2024
         """
     )
 
     # Model selection
     parser.add_argument("--model-id", type=str, required=True,
-                        choices=['1a', '1b', '1c', '2a', '2d', '2e', '3a', '3b', '3c', '4a', '4d', '4e'],
+                        choices=['1a', '1b', '1c', '2a', '2d', '2e', '2h', '2i',
+                                 '3a', '3b', '3c', '4a', '4d', '4e'],
                         help="Model ID")
 
     # Task selection
     parser.add_argument("--task", type=str, required=True,
-                        choices=['forrelation', 'adding_problem', 'selective_copy'],
+                        choices=['forrelation', 'adding_problem', 'selective_copy',
+                                 'continuous_selective_copy', 'frequency_copying', 'frequency_reproduction'],
                         help="Synthetic benchmark task")
 
     # Sequence length
